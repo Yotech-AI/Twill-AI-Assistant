@@ -8,9 +8,15 @@ on:
 permissions:
   contents: read
 
+# The package is checked out into a subdirectory rather than the workspace root,
+# because composer.json resolves yotech-ai/twill-plugin-support through a path
+# repository at ../twill-plugin-support and actions/checkout refuses any path
+# above the workspace. Both checkouts therefore sit side by side under it.
+defaults:
+  run:
+    working-directory: package
+
 jobs:
-  # The main matrix. laravel/mcp and laravel/passport are present here, so the
-  # MCP connector suite runs.
   test:
     runs-on: ubuntu-latest
 
@@ -30,15 +36,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: package
 
-      # twill-plugin-support is resolved through a path repository, so it has to
-      # sit next to this checkout. Swap this for Packagist once the package is
-      # published and drop the `repositories` entry from composer.json.
+      # Drop this once twill-plugin-support is on Packagist, along with the
+      # `repositories` entry in composer.json.
       - name: Check out twill-plugin-support
         uses: actions/checkout@v4
         with:
           repository: Yotech-AI/twill-plugin-support
-          path: ../twill-plugin-support
+          path: twill-plugin-support
           ref: v1.0.0
 
       - name: Set up PHP
@@ -61,22 +68,24 @@ jobs:
       - name: Run tests
         run: vendor/bin/pest --no-coverage
 
-  # The quiz-cms shape: a host that wants the admin assistant but never
-  # installed the connector. Proves the MCP gate leaves the package fully
-  # working when laravel/mcp and laravel/passport are simply absent — the half
-  # of the gate class_exists() makes untestable from inside the suite.
+  # The quiz-cms shape: a host that wants the admin assistant but never installed
+  # the connector. Proves the MCP gate leaves the package fully working when
+  # laravel/mcp and laravel/passport are simply absent — the half of the gate
+  # class_exists() makes untestable from inside the suite.
   test-without-mcp:
     runs-on: ubuntu-latest
     name: PHP 8.4 / Laravel 13 / no mcp, no passport
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: package
 
       - name: Check out twill-plugin-support
         uses: actions/checkout@v4
         with:
           repository: Yotech-AI/twill-plugin-support
-          path: ../twill-plugin-support
+          path: twill-plugin-support
           ref: v1.0.0
 
       - name: Set up PHP
@@ -100,12 +109,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: package
 
       - name: Check out twill-plugin-support
         uses: actions/checkout@v4
         with:
           repository: Yotech-AI/twill-plugin-support
-          path: ../twill-plugin-support
+          path: twill-plugin-support
           ref: v1.0.0
 
       - name: Set up PHP
