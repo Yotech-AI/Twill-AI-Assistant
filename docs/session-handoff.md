@@ -47,15 +47,82 @@ touched (a global constraint of the plan).
 Two commits, clean tree, **no git remote and no tag** — the plan requires explicit
 user approval before creating the public repo, and it has not been given.
 
+## Phase 3 — done (2026-08-18, second session)
+
+**140 tests / 443 assertions green**, `pint --test` clean. Run with
+`vendor/bin/pest.bat --no-coverage`.
+
+- **3.1 harness.** Twill 3.6 boots under Testbench 11 — the plan's only
+  High-severity risk did not materialise and its "smoke tests only" fallback is
+  not needed. Two SQLite traps, both documented in `tests/TestCase.php`: the test
+  connection must be *named* `sqlite` (Twill migrations compare the connection
+  NAME, not the driver), and migrations must run via `artisan migrate --path`
+  rather than `loadMigrationsFrom()`, whose teardown rollback hits Twill's
+  `add_id_to_related::down()` dropping a SQLite PRIMARY KEY. A third: Twill's
+  compiled assets are not shipped via Composer, so every admin view 500s until
+  `Cache::forever('twill-manifest', [])` is seeded.
+- **3.2 fixture CMS.** `tests/Fixtures/`: translatable `Article` (+translation,
+  slug, repository), non-translatable `Singleton` (the `extra_fields` path),
+  `PlainArticle` (no media roles), and four component blocks — plain, inline
+  repeater, nested editor, and `fixture-banner` which is allowed in the
+  singleton's editor only so the per-editor guard can be tested with a real
+  block. **Deviation:** the plan said register blocks via
+  `twill.block_editor.directories.source.blocks`; that path only discovers
+  *blade* blocks, and `BlockSchemaService` reflects `getForm()` on *component*
+  blocks, so they are registered with `TwillBlocks::registerManualBlock()`.
+- **3.3** all 12 tests ported. `ContentRoundTripTest` and `PayloadGuardsTest`
+  needed the most rework, as predicted.
+- **3.4** new coverage: MCP gate, widget composer, asset route, runtime config
+  defaults, prompt composer.
+- **3.5** `.github/workflows/tests.yml` — matrix PHP 8.3/8.4 × Laravel 12/13 ×
+  mcp 0.5/0.9, a no-mcp/no-passport job (`FeatureWithoutMcp` suite, 103 tests),
+  and a Pint job. **CI cannot run yet** — see the blocker below.
+
+### Four bugs the new tests found, all fixed
+
+1. **`browsers` registry key mismatch.** `ModuleRegistry::describe()` advertises
+   a browser's target as `module`; `PayloadBuilder` read `model` and died with
+   `Undefined array key "model"`. Never caught because pomofit sets
+   `'browsers' => []` on every module, so the path had never run. Now accepts
+   either, preferring an explicit `model`.
+2. **MCP guard vs routes registered in different phases.** The `twill-mcp` guard
+   was filled in `register()` while the routes were registered in `boot()` — the
+   same gate evaluated at two moments. When they disagreed the routes existed
+   without their guard, so every MCP request 500'd with
+   `Auth guard [twill-mcp] is not defined` instead of the connector staying
+   dormant. Both now happen in `boot()`, which also makes the `passport.guard`
+   fill genuinely order-independent.
+3. **The approver-login redirect was left behind in the extraction.** It lived in
+   pomofit's `bootstrap/app.php`. Without it an admin approving a connector is
+   sent to the *customer* login and loops — the test plan's Test 1.2, which it
+   rates as safety-grade. Now registered by `McpServiceProvider`.
+4. **The worked prompt example still named pomofit's fields.** Blocks were
+   generalised in Phase 2 but `fields`/`medias` still said `seo_title`,
+   `seo_description`, `seo_image`. An agent following it on a module without
+   those columns got "Unknown field" back. Both levels now derive from the
+   example module's real columns and media roles, and are omitted when there are
+   none.
+
+## Blocker — CI cannot run until the repos exist
+
+`composer.json` now carries a `repositories` entry pointing at
+`../twill-plugin-support`, because that package has no remote and is not on
+Packagist, so **`composer install` failed outright before this**. The path repo
+pins `1.0.0` explicitly (path repositories do not read git tags). The CI workflow
+works around it by checking out `Yotech-AI/twill-plugin-support` as a sibling —
+which needs that repo to exist. Once it does, switch to Packagist and drop the
+`repositories` entry.
+
 ## Not done
 
-- **Phase 3 — test harness.** Nothing ported. `tests/` does not exist and
-  `require-dev` (Testbench, Pest) is declared but never exercised. The plan flags
-  Task 3.1 (Twill under Testbench) as its highest risk; build and prove the
-  harness before porting the 12 tests. This is the natural next session.
 - **Phase 4** — CHANGELOG, `docs/connecting-claude.md`, de-pomofit'ing
-  `docs/runbook.md` and `docs/test-plan.md` (both copied over verbatim and still
-  contain pomofit references — the only place any remain). Then repo + Packagist.
+  `docs/runbook.md` and `docs/test-plan.md`. Note the earlier claim that both
+  contain pomofit references was wrong: `runbook.md` has none (it has one
+  *easy-to-spain* reference, line 116) and `test-plan.md` has one literal
+  `pomofit.test`. The real problem is that test-plan.md's worked examples are all
+  easy-to-spain (NIE numbers, Spanish residency), and that it tells testers the
+  Part 3 safety rules are "covered by automated tests" — true of pomofit when it
+  was written, and true of this package again only as of this session.
 - **Phase 5** — adoption in pomofit, quiz-cms, easy-to-spain. Not started.
 
 ## Deviations from the plan (intentional — do not "fix" these back)
@@ -64,7 +131,9 @@ user approval before creating the public repo, and it has not been given.
    but Passport always ships a `web` default, so the rule could never fire — and
    forcing it is unsafe because the setting is global to Passport and would break
    a host that serves its own customer API with it. It is a documented host step;
-   `twill-ai:doctor` reports it with the one-line fix.
+   `twill-ai:doctor` reports it with the one-line fix. The MCP suite performs
+   that host step itself (`McpTestCase`), and the approval-screen test is what
+   proves the step is necessary.
 2. **`laravel/passport` pinned `^13.7.1`**, not `^13.7`. See the CVE note below.
 3. **`area17/twill: ^3.5`** on the shared support package (plan said nothing);
    verified the TwillNavigation/TwillRoutes APIs used are byte-identical at the

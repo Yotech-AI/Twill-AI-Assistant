@@ -2,7 +2,7 @@
   "name": "yotech-ai/twill-cms-ai-assistant",
   "description": "An AI content assistant and MCP connector for Twill CMS.",
   "keywords": ["twill", "laravel", "cms", "ai", "mcp", "twill-plugin"],
-  "homepage": "https://github.com/Yotech-AI/twill-cms-ai-assistant",
+  "homepage": "https://github.com/Yotech-AI/Twill-AI-Assistant",
   "license": "MIT",
   "type": "library",
   "require": {
@@ -49,5 +49,15 @@
     }
   },
   "minimum-stability": "stable",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "repositories": [{
+    "name": "twill-plugin-support",
+    "type": "path",
+    "url": "../twill-plugin-support",
+    "options": {
+      "versions": {
+        "yotech-ai/twill-plugin-support": "1.0.0"
+      }
+    }
+  }]
 }
