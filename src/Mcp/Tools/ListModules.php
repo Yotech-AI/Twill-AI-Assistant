@@ -2,8 +2,8 @@
 
 namespace TwillAi\Mcp\Tools;
 
-use TwillAi\Tools\ListModules as ListModulesTool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
+use TwillAi\Tools\ListModules as ListModulesTool;
 
 #[IsReadOnly]
 class ListModules extends WrappedTwillAiTool

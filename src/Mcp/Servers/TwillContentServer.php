@@ -2,6 +2,8 @@
 
 namespace TwillAi\Mcp\Servers;
 
+use Laravel\Mcp\Server;
+use Laravel\Mcp\Server\Contracts\Transport;
 use TwillAi\Mcp\Tools\CreateContent;
 use TwillAi\Mcp\Tools\GetContent;
 use TwillAi\Mcp\Tools\GetModuleSchema;
@@ -11,8 +13,6 @@ use TwillAi\Mcp\Tools\SearchContent;
 use TwillAi\Mcp\Tools\SearchMedia;
 use TwillAi\Mcp\Tools\UpdateContent;
 use TwillAi\Services\PromptComposer;
-use Laravel\Mcp\Server;
-use Laravel\Mcp\Server\Contracts\Transport;
 
 /**
  * Exposes the Twill CMS write surface to external MCP clients (Claude Cowork).

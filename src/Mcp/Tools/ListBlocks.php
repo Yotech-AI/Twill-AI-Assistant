@@ -2,8 +2,8 @@
 
 namespace TwillAi\Mcp\Tools;
 
-use TwillAi\Tools\ListBlocks as ListBlocksTool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
+use TwillAi\Tools\ListBlocks as ListBlocksTool;
 
 #[IsReadOnly]
 class ListBlocks extends WrappedTwillAiTool

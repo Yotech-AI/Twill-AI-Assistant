@@ -2,11 +2,11 @@
 
 namespace TwillAi\Tools\Concerns;
 
-use TwillAi\Exceptions\TwillAiException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Throwable;
+use TwillAi\Exceptions\TwillAiException;
 
 trait HandlesToolErrors
 {

@@ -2,12 +2,12 @@
 
 namespace TwillAi\Http\Controllers;
 
-use TwillAi\Http\Requests\UploadFileRequest;
-use TwillAi\Services\ChatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use TwillAi\Http\Requests\UploadFileRequest;
+use TwillAi\Services\ChatService;
 
 /**
  * The shared Twill AI file library (the Uploads page + the composer "+"). Files

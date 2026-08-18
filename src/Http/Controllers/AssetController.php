@@ -31,7 +31,7 @@ class AssetController extends Controller
             abort(404);
         }
 
-        $path = __DIR__ . '/../../../resources/dist/' . $file;
+        $path = __DIR__.'/../../../resources/dist/'.$file;
 
         if (! is_file($path)) {
             abort(404);
@@ -66,14 +66,14 @@ class AssetController extends Controller
      */
     public static function url(string $file): string
     {
-        $published = public_path('vendor/twill-ai/' . $file);
+        $published = public_path('vendor/twill-ai/'.$file);
 
         if (is_file($published)) {
-            return asset('vendor/twill-ai/' . $file) . '?v=' . (@filemtime($published) ?: '1');
+            return asset('vendor/twill-ai/'.$file).'?v='.(@filemtime($published) ?: '1');
         }
 
         return route(
-            config('twill.admin_route_name_prefix', 'twill.') . 'ai.asset',
+            config('twill.admin_route_name_prefix', 'twill.').'ai.asset',
             ['file' => $file, 'v' => self::version()]
         );
     }

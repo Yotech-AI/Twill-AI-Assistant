@@ -2,14 +2,14 @@
 
 namespace TwillAi\Mcp\Console;
 
-use TwillAi\Mcp\Models\McpClient;
-use TwillAi\Mcp\Servers\TwillContentServer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Client;
 use Laravel\Passport\Token;
 use ReflectionProperty;
 use Throwable;
+use TwillAi\Mcp\Models\McpClient;
+use TwillAi\Mcp\Servers\TwillContentServer;
 
 /**
  * Diagnoses the MCP integration on whichever machine it runs on.

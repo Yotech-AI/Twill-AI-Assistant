@@ -2,8 +2,8 @@
 
 namespace TwillAi\Mcp\Tools;
 
-use TwillAi\Tools\GetModuleSchema as GetModuleSchemaTool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
+use TwillAi\Tools\GetModuleSchema as GetModuleSchemaTool;
 
 #[IsReadOnly]
 class GetModuleSchema extends WrappedTwillAiTool

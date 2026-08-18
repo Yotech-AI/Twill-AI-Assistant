@@ -2,15 +2,15 @@
 
 namespace TwillAi\Tools;
 
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Ai\Contracts\Tool;
+use Laravel\Ai\Tools\Request;
+use Stringable;
 use TwillAi\Exceptions\TwillAiException;
 use TwillAi\Services\BlockSchemaService;
 use TwillAi\Services\ModuleRegistry;
 use TwillAi\Services\PromptComposer;
 use TwillAi\Tools\Concerns\HandlesToolErrors;
-use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Laravel\Ai\Contracts\Tool;
-use Laravel\Ai\Tools\Request;
-use Stringable;
 
 class ListBlocks implements Tool
 {
@@ -61,7 +61,7 @@ class ListBlocks implements Tool
     {
         return [
             'module' => $schema->string()->description('Module key from list_modules.')->required(),
-            'editor' => $schema->string()->description('Optional: limit to one block editor by name. ' . $this->prompts->editorGuidance()),
+            'editor' => $schema->string()->description('Optional: limit to one block editor by name. '.$this->prompts->editorGuidance()),
         ];
     }
 }

@@ -3,12 +3,12 @@
 namespace TwillAi\Mcp\Console;
 
 use A17\Twill\Models\Enums\UserRole;
-use TwillAi\Mcp\Models\McpClient;
-use TwillAi\Models\TwillUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
+use TwillAi\Mcp\Models\McpClient;
+use TwillAi\Models\TwillUser;
 
 class CreateClientCommand extends Command
 {

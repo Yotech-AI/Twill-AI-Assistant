@@ -6,9 +6,9 @@ use A17\Twill\Facades\TwillBlocks;
 use A17\Twill\Services\Blocks\Block as BlockDefinition;
 use A17\Twill\Services\Forms\InlineRepeater;
 use A17\Twill\TwillBlocks as TwillBlocksManager;
-use TwillAi\Exceptions\TwillAiException;
 use ReflectionObject;
 use Throwable;
+use TwillAi\Exceptions\TwillAiException;
 
 /**
  * Reflects Twill component blocks (TwillBlockComponent::getForm()) into a

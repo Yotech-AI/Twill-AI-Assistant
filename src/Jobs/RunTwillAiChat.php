@@ -3,14 +3,6 @@
 namespace TwillAi\Jobs;
 
 use A17\Twill\Models\User as TwillUser;
-use TwillAi\Agents\TwillAssistant;
-use TwillAi\Models\Chat;
-use TwillAi\Models\ChatEvent;
-use TwillAi\Models\ChatFile;
-use TwillAi\Services\BlockSchemaService;
-use TwillAi\Services\ChatAttachmentResolver;
-use TwillAi\Services\ModuleRegistry;
-use TwillAi\Services\SettingsService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,6 +11,14 @@ use Illuminate\Support\Facades\Cache;
 use Laravel\Ai\Files\File;
 use Laravel\Ai\Responses\StreamedAgentResponse;
 use Throwable;
+use TwillAi\Agents\TwillAssistant;
+use TwillAi\Models\Chat;
+use TwillAi\Models\ChatEvent;
+use TwillAi\Models\ChatFile;
+use TwillAi\Services\BlockSchemaService;
+use TwillAi\Services\ChatAttachmentResolver;
+use TwillAi\Services\ModuleRegistry;
+use TwillAi\Services\SettingsService;
 
 /**
  * Runs one Twill AI agent turn in the background. The HTTP layer only queues

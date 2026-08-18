@@ -35,7 +35,7 @@ class InstallCommand extends Command
             $this->line('Registered automatically (your own config always wins):');
 
             foreach ($filled as $key) {
-                $this->line('  - ' . $key);
+                $this->line('  - '.$key);
             }
         }
 
@@ -45,9 +45,9 @@ class InstallCommand extends Command
         $this->line('  2. Describe your modules in config/twill-ai.php — the agent can only see what is listed there.');
         $this->line('  3. Run a queue worker for the chat:');
         $this->line('       php artisan queue:work twill-ai --queue=twill-ai --timeout='
-            . ((int) config('twill-ai.timeout', 600) + 20));
-        $this->line('  4. Open the admin, go to ' . config('twill-ai.ui.title', 'Twill AI')
-            . ' → Settings and save a provider API key.');
+            .((int) config('twill-ai.timeout', 600) + 20));
+        $this->line('  4. Open the admin, go to '.config('twill-ai.ui.title', 'Twill AI')
+            .' → Settings and save a provider API key.');
 
         if (config('twill-ai.mcp.enabled')) {
             $this->line('  5. MCP is enabled: run php artisan passport:keys, set passport.guard to twill_users,');

@@ -2,9 +2,9 @@
 
 namespace TwillAi\Services\Providers;
 
-use TwillAi\Exceptions\TwillAiException;
 use Illuminate\Http\Client\Response;
 use Throwable;
+use TwillAi\Exceptions\TwillAiException;
 
 /**
  * Shared HTTP + error handling for the provider model-listing adapters. A 401/

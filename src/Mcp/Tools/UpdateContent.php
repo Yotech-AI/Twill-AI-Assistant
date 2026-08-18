@@ -2,8 +2,8 @@
 
 namespace TwillAi\Mcp\Tools;
 
-use TwillAi\Tools\UpdateContent as UpdateContentTool;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
+use TwillAi\Tools\UpdateContent as UpdateContentTool;
 
 /**
  * Updates an existing entry. Idempotent: re-sending the same payload converges

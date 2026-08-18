@@ -4,9 +4,9 @@ namespace TwillAi\Services;
 
 use A17\Twill\Models\Contracts\TwillModelContract;
 use A17\Twill\Repositories\ModuleRepository;
-use TwillAi\Exceptions\TwillAiException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
+use TwillAi\Exceptions\TwillAiException;
 
 /**
  * The single source of truth for which Twill modules the AI agent can see

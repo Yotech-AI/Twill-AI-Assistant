@@ -2,10 +2,10 @@
 
 namespace TwillAi\Mcp\Models;
 
-use TwillAi\Models\TwillUser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Laravel\Passport\Client;
+use TwillAi\Models\TwillUser;
 
 /**
  * The registry of connectors permitted to reach the MCP endpoint.

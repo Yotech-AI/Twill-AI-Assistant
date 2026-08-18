@@ -3,15 +3,15 @@
 namespace TwillAi\Tools;
 
 use A17\Twill\Repositories\BlockRepository;
-use TwillAi\Exceptions\TwillAiException;
-use TwillAi\Services\ModuleRegistry;
-use TwillAi\Services\PayloadBuilder;
-use TwillAi\Tools\Concerns\HandlesToolErrors;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\DB;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
 use Stringable;
+use TwillAi\Exceptions\TwillAiException;
+use TwillAi\Services\ModuleRegistry;
+use TwillAi\Services\PayloadBuilder;
+use TwillAi\Tools\Concerns\HandlesToolErrors;
 
 class UpdateContent implements Tool
 {

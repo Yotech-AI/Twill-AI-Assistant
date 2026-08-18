@@ -2,9 +2,9 @@
 
 namespace TwillAi\Http\Controllers;
 
-use TwillAi\Services\ChatService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Routing\Controller;
+use TwillAi\Services\ChatService;
 
 class TwillAiPageController extends Controller
 {

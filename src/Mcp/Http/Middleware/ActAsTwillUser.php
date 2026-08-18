@@ -2,12 +2,12 @@
 
 namespace TwillAi\Mcp\Http\Middleware;
 
-use TwillAi\Mcp\Models\McpClient;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Passport\AccessToken;
 use Symfony\Component\HttpFoundation\Response;
+use TwillAi\Mcp\Models\McpClient;
 
 /**
  * Binds an MCP connector's dedicated attribution user to the twill_users guard.

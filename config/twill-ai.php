@@ -170,10 +170,16 @@ return [
     | The MCP endpoint does NOT use this queue: an external client is already
     | the model doing the writing, so its tool calls run inline in the request.
     |
+    | A site that would rather not run a worker at all can set
+    | TWILL_AI_QUEUE_CONNECTION=sync, which runs the agent inline in the request.
+    | That removes the worker requirement but reinstates the execution limits
+    | this queue exists to avoid, so it suits local development and short prompts
+    | rather than production.
+    |
     */
 
-    'queue_connection' => 'twill-ai',
-    'queue' => 'twill-ai',
+    'queue_connection' => env('TWILL_AI_QUEUE_CONNECTION', 'twill-ai'),
+    'queue' => env('TWILL_AI_QUEUE', 'twill-ai'),
 
     // Job timeout AND per-call HTTP timeout (seconds) for the provider.
     'timeout' => (int) env('TWILL_AI_TIMEOUT', 600),

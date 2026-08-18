@@ -29,7 +29,7 @@ class PromptComposer
      */
     public function resolve(string $key, string $generated): string
     {
-        $override = config('twill-ai.prompts.' . $key);
+        $override = config('twill-ai.prompts.'.$key);
 
         return is_string($override) && trim($override) !== '' ? $override : $generated;
     }
@@ -109,7 +109,7 @@ class PromptComposer
         $generated = match (true) {
             $editors === [] => 'The block editor name, as registered for the module in get_module_schema.',
             $editors === ['default'] => 'The block editor name. Every module here uses a single editor called "default".',
-            default => 'The block editor name, e.g. ' . $this->quotedList(array_slice($editors, 0, 3)) . '. Take it from get_module_schema.',
+            default => 'The block editor name, e.g. '.$this->quotedList(array_slice($editors, 0, 3)).'. Take it from get_module_schema.',
         };
 
         return $this->resolve('list_blocks_editor', $generated);
@@ -131,10 +131,10 @@ class PromptComposer
         $blocks = array_slice(array_values($editors[$editor]), 0, 4);
 
         if ($blocks === []) {
-            return $editor . ': hero → text → call-to-action';
+            return $editor.': hero → text → call-to-action';
         }
 
-        return $editor . ': ' . implode(' → ', $blocks);
+        return $editor.': '.implode(' → ', $blocks);
     }
 
     /**
@@ -161,14 +161,26 @@ class PromptComposer
             }
         }
 
+        $fields = $this->exampleFields($module, $locale);
+
+        // Omitted entirely when the example module registers no media roles —
+        // showing a role that does not exist teaches the agent a call the
+        // payload builder will reject.
+        $medias = $this->exampleMedias($module);
+        $mediasLine = $medias === null ? '' : "\n  \"medias\": {$medias},";
+
+        // Same rule one level down: only show a block media role the first
+        // example block actually declares.
+        $blockMedias = $this->exampleBlockMedias($blocks[0]);
+        $blockMediasPart = $blockMedias === null ? '' : ", \"medias\": {$blockMedias}";
+
         $generated = <<<DESC
         {
-          "fields": {"title": {"{$locale}": "..."}, "seo_title": {...}, "seo_description": {...}},
-          "locales": {$locales},
-          "medias": {"seo_image": [123]},
+          "fields": {$fields},
+          "locales": {$locales},{$mediasLine}
           "blocks": {
             "{$editor}": [
-              {"type": "{$blocks[0]}", "content": {"title": {"{$locale}": "..."}}, "medias": {"image": [55]}},
+              {"type": "{$blocks[0]}", "content": {"title": {"{$locale}": "..."}}{$blockMediasPart}},
               {"type": "{$blocks[1]}", "content": {"body": {"{$locale}": "<p>...</p>"}}},
               {"type": "{$blocks[2]}", "content": {"title": {"{$locale}": "..."}}, "children": {"<repeater name>": [{"content": {"question": {"{$locale}": "..."}}}]}}
             ]
@@ -177,6 +189,77 @@ class PromptComposer
         DESC;
 
         return $this->resolve('create_content', $generated);
+    }
+
+    /**
+     * The "fields" object of the worked example, built from the example
+     * module's real columns.
+     *
+     * Translated attributes come from the model, non-translated ones from the
+     * registry's extra_fields whitelist — the same two sources PayloadBuilder
+     * validates against, so the example can never advertise a field the builder
+     * would then reject.
+     *
+     * @param  array{key: string, config: array<string, mixed>}|null  $module
+     */
+    protected function exampleFields(?array $module, string $locale): string
+    {
+        if ($module === null) {
+            return sprintf('{"title": {"%s": "..."}}', $locale);
+        }
+
+        $model = $this->registry->modelInstance($module['key']);
+
+        $parts = [];
+
+        foreach (array_slice(array_values($model->translatedAttributes ?? []), 0, 3) as $field) {
+            $parts[] = sprintf('"%s": {"%s": "..."}', $field, $locale);
+        }
+
+        foreach (array_slice(array_keys($module['config']['extra_fields'] ?? []), 0, 3) as $field) {
+            $parts[] = sprintf('"%s": "..."', $field);
+        }
+
+        return $parts === [] ? '{}' : '{'.implode(', ', $parts).'}';
+    }
+
+    /**
+     * The "medias" object of the worked example, or null when the example
+     * module has no media roles to show.
+     *
+     * @param  array{key: string, config: array<string, mixed>}|null  $module
+     */
+    protected function exampleMedias(?array $module): ?string
+    {
+        if ($module === null) {
+            return null;
+        }
+
+        $roles = array_keys($this->registry->modelInstance($module['key'])->mediasParams ?? []);
+
+        return $roles === [] ? null : sprintf('{"%s": [123]}', $roles[0]);
+    }
+
+    /**
+     * The "medias" fragment for a block inside the worked example, or null when
+     * that block declares no media role.
+     *
+     * Resolved from the container rather than injected so the constructor stays
+     * compatible with any host that already extends this class.
+     */
+    protected function exampleBlockMedias(string $block): ?string
+    {
+        if (str_starts_with($block, '<')) {
+            return null;
+        }
+
+        try {
+            $roles = array_keys(app(BlockSchemaService::class)->mediaRolesFor($block));
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $roles === [] ? null : sprintf('{"%s": [55]}', $roles[0]);
     }
 
     /**
@@ -219,8 +302,8 @@ class PromptComposer
         $site = $description !== '' ? "{$siteName}, {$description}" : $siteName;
 
         $localeNote = $this->isMultilingual()
-            ? 'This site is multilingual. Translated fields are objects keyed by locale, e.g. ' . $this->localeExample() . '. Write idiomatic copy per locale rather than word-for-word translations.'
-            : 'Translated fields are objects keyed by locale; this site has one, so they look like {"' . $this->primaryLocale() . '": "..."}.';
+            ? 'This site is multilingual. Translated fields are objects keyed by locale, e.g. '.$this->localeExample().'. Write idiomatic copy per locale rather than word-for-word translations.'
+            : 'Translated fields are objects keyed by locale; this site has one, so they look like {"'.$this->primaryLocale().'": "..."}.';
 
         $plainFieldNote = $this->plainFieldModuleNote();
 
@@ -266,11 +349,11 @@ class PromptComposer
     protected function localeExample(): string
     {
         $pairs = array_map(
-            fn (string $locale) => '"' . $locale . '": "..."',
+            fn (string $locale) => '"'.$locale.'": "..."',
             array_slice($this->locales(), 0, 3)
         );
 
-        return '{' . implode(', ', $pairs) . '}';
+        return '{'.implode(', ', $pairs).'}';
     }
 
     /**
@@ -298,8 +381,8 @@ class PromptComposer
             return '';
         }
 
-        return ' The ' . $this->quotedList($plain) . ' ' . (count($plain) === 1 ? 'module is an exception — it has' : 'modules are exceptions — they have')
-            . ' no translations table, so those fields are plain strings. get_module_schema tells you which is which.';
+        return ' The '.$this->quotedList($plain).' '.(count($plain) === 1 ? 'module is an exception — it has' : 'modules are exceptions — they have')
+            .' no translations table, so those fields are plain strings. get_module_schema tells you which is which.';
     }
 
     /**
@@ -307,7 +390,7 @@ class PromptComposer
      */
     protected function quotedList(array $items): string
     {
-        $quoted = array_map(fn (string $item) => '"' . $item . '"', $items);
+        $quoted = array_map(fn (string $item) => '"'.$item.'"', $items);
 
         if (count($quoted) <= 1) {
             return (string) ($quoted[0] ?? '');
@@ -315,6 +398,6 @@ class PromptComposer
 
         $last = array_pop($quoted);
 
-        return implode(', ', $quoted) . ' or ' . $last;
+        return implode(', ', $quoted).' or '.$last;
     }
 }

@@ -1,10 +1,10 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use TwillAi\Http\Controllers\ChatController;
 use TwillAi\Http\Controllers\FileController;
 use TwillAi\Http\Controllers\SettingsController;
 use TwillAi\Http\Controllers\TwillAiPageController;
-use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------

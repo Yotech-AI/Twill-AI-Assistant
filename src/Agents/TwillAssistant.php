@@ -2,6 +2,15 @@
 
 namespace TwillAi\Agents;
 
+use Laravel\Ai\Attributes\MaxSteps;
+use Laravel\Ai\Concerns\RemembersConversations;
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\Conversational;
+use Laravel\Ai\Contracts\HasProviderOptions;
+use Laravel\Ai\Contracts\HasTools;
+use Laravel\Ai\Contracts\Tool;
+use Laravel\Ai\Enums\Lab;
+use Laravel\Ai\Promptable;
 use TwillAi\Models\Chat;
 use TwillAi\Models\TwillAiSetting;
 use TwillAi\Services\ModuleRegistry;
@@ -15,15 +24,6 @@ use TwillAi\Tools\SearchContent;
 use TwillAi\Tools\SearchMedia;
 use TwillAi\Tools\UpdateContent;
 use TwillAi\Tools\UseAttachmentAsMedia;
-use Laravel\Ai\Attributes\MaxSteps;
-use Laravel\Ai\Concerns\RemembersConversations;
-use Laravel\Ai\Contracts\Agent;
-use Laravel\Ai\Contracts\Conversational;
-use Laravel\Ai\Contracts\HasProviderOptions;
-use Laravel\Ai\Contracts\HasTools;
-use Laravel\Ai\Contracts\Tool;
-use Laravel\Ai\Enums\Lab;
-use Laravel\Ai\Promptable;
 
 /**
  * The Twill AI content assistant. Provider/model are resolved per chat (the

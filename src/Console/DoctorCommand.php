@@ -3,10 +3,12 @@
 namespace TwillAi\Console;
 
 use A17\Twill\Facades\TwillBlocks;
+use Illuminate\Console\Command;
+use Laravel\Mcp\Server;
+use Laravel\Passport\Contracts\OAuthenticatable;
+use Throwable;
 use TwillAi\Services\BlockSchemaService;
 use TwillAi\Services\ModuleRegistry;
-use Illuminate\Console\Command;
-use Throwable;
 
 /**
  * Diagnoses the Twill AI environment — most usefully on a server, where a
@@ -107,8 +109,8 @@ class DoctorCommand extends Command
             $this->error("  [XXX] queue connection \"{$connection}\" is not configured.");
         } else {
             $this->line("  [OK ] queue connection \"{$connection}\" is configured.");
-            $this->line('         A worker must be running: php artisan queue:work ' . $connection
-                . ' --queue=' . config('twill-ai.queue', 'twill-ai'));
+            $this->line('         A worker must be running: php artisan queue:work '.$connection
+                .' --queue='.config('twill-ai.queue', 'twill-ai'));
         }
 
         if (! config('twill-ai.mcp.enabled')) {
@@ -117,7 +119,7 @@ class DoctorCommand extends Command
             return;
         }
 
-        if (! class_exists(\Laravel\Mcp\Server::class)) {
+        if (! class_exists(Server::class)) {
             $this->error('  [XXX] MCP is enabled but laravel/mcp is not installed.');
 
             return;
@@ -131,7 +133,7 @@ class DoctorCommand extends Command
             $this->warn('  [ ! ] twill.models.user is not set — MCP needs a user model implementing');
             $this->line('         Laravel\Passport\Contracts\OAuthenticatable. Point it at');
             $this->line('         TwillAi\Models\TwillUser, or apply TwillAi\Concerns\ActsAsOAuthUser to your own.');
-        } elseif (! is_a($userModel, \Laravel\Passport\Contracts\OAuthenticatable::class, true)) {
+        } elseif (! is_a($userModel, OAuthenticatable::class, true)) {
             $this->error("  [XXX] twill.models.user ({$userModel}) does not implement OAuthenticatable.");
         } else {
             $this->line('  [OK ] twill.models.user implements OAuthenticatable.');

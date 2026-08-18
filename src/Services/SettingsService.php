@@ -2,10 +2,10 @@
 
 namespace TwillAi\Services;
 
+use Throwable;
 use TwillAi\Exceptions\TwillAiException;
 use TwillAi\Models\TwillAiSetting;
 use TwillAi\Services\Providers\ProviderClients;
-use Throwable;
 
 /**
  * Orchestrates the install-wide Twill AI settings: validating + storing the

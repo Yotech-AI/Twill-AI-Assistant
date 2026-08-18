@@ -2,8 +2,8 @@
 
 namespace TwillAi\Mcp\Tools;
 
-use TwillAi\Tools\SearchMedia as SearchMediaTool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
+use TwillAi\Tools\SearchMedia as SearchMediaTool;
 
 #[IsReadOnly]
 class SearchMedia extends WrappedTwillAiTool

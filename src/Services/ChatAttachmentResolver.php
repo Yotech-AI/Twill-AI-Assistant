@@ -2,11 +2,11 @@
 
 namespace TwillAi\Services;
 
-use TwillAi\Models\ChatFile;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Ai\Files\Document;
 use Laravel\Ai\Files\File;
 use Laravel\Ai\Files\Image;
+use TwillAi\Models\ChatFile;
 
 /**
  * Turns stored chat files into what the agent can actually consume:

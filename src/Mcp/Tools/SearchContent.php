@@ -2,8 +2,8 @@
 
 namespace TwillAi\Mcp\Tools;
 
-use TwillAi\Tools\SearchContent as SearchContentTool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
+use TwillAi\Tools\SearchContent as SearchContentTool;
 
 #[IsReadOnly]
 class SearchContent extends WrappedTwillAiTool

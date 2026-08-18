@@ -4,8 +4,8 @@ namespace TwillAi\Services;
 
 use A17\Twill\Models\Contracts\TwillModelContract;
 use A17\Twill\Models\Media;
-use TwillAi\Exceptions\TwillAiException;
 use Illuminate\Support\Arr;
+use TwillAi\Exceptions\TwillAiException;
 
 /**
  * Converts an agent-facing payload into the exact $fields array Twill's
@@ -358,6 +358,36 @@ class PayloadBuilder
     }
 
     /**
+     * Resolve the model class a browser points at.
+     *
+     * A registry entry may name its target either way round, and both have to
+     * work: ModuleRegistry::describe() reports a browser to the agent as
+     * `related_module` (read from the "module" key), so a registry written to
+     * match the vocabulary the agent is given uses "module". An explicit "model"
+     * class stays supported for targets that are not registered modules at all,
+     * and wins when both are present.
+     *
+     * @param  array<string, mixed>  $browserConfig
+     * @return class-string|null
+     */
+    protected function browserTargetModel(array $browserConfig): ?string
+    {
+        if (! empty($browserConfig['model'])) {
+            return $browserConfig['model'];
+        }
+
+        $module = $browserConfig['module'] ?? null;
+
+        if (! is_string($module) || $module === '') {
+            return null;
+        }
+
+        return $this->registry->has($module)
+            ? $this->registry->get($module)['model'] ?? null
+            : null;
+    }
+
+    /**
      * @param  array<string, mixed>  $fields
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $config
@@ -383,7 +413,16 @@ class PayloadBuilder
             }
 
             $browserConfig = $registryBrowsers[$name];
-            $normalized = $this->normalizeBrowserItems($items, [$browserConfig['model']], "browsers.{$name}");
+            $targetModel = $this->browserTargetModel($browserConfig);
+
+            if ($targetModel === null) {
+                $this->errors[] = "Browser \"{$name}\" is misconfigured: its registry entry needs a "
+                    .'"module" (another registered module key) or an explicit "model" class.';
+
+                continue;
+            }
+
+            $normalized = $this->normalizeBrowserItems($items, [$targetModel], "browsers.{$name}");
 
             if (($browserConfig['max'] ?? null) && count($normalized) > $browserConfig['max']) {
                 $this->errors[] = "Browser \"{$name}\" accepts at most {$browserConfig['max']} item(s).";

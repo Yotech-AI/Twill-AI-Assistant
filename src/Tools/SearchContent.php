@@ -2,13 +2,13 @@
 
 namespace TwillAi\Tools;
 
-use TwillAi\Services\ModuleRegistry;
-use TwillAi\Services\PromptComposer;
-use TwillAi\Tools\Concerns\HandlesToolErrors;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
 use Stringable;
+use TwillAi\Services\ModuleRegistry;
+use TwillAi\Services\PromptComposer;
+use TwillAi\Tools\Concerns\HandlesToolErrors;
 
 class SearchContent implements Tool
 {
@@ -27,8 +27,8 @@ class SearchContent implements Tool
     public function description(): Stringable|string
     {
         return 'Find existing entries of a module by title (per locale titles, id, published state, edit link). '
-            . $this->prompts->relationExample()
-            . ' Also use it to locate an entry the user wants updated.';
+            .$this->prompts->relationExample()
+            .' Also use it to locate an entry the user wants updated.';
     }
 
     public function handle(Request $request): Stringable|string

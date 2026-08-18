@@ -7,6 +7,7 @@ use A17\Twill\View\Components\Navigation\NavigationLink;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
+use Laravel\Mcp\Server;
 use Yotech\TwillPluginSupport\TwillPluginServiceProvider;
 
 /**
@@ -38,7 +39,7 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
     {
         parent::register();
 
-        $this->mergeConfigFrom(__DIR__ . '/../config/twill-ai.php', 'twill-ai');
+        $this->mergeConfigFrom(__DIR__.'/../config/twill-ai.php', 'twill-ai');
 
         $this->app->singleton(Services\ModuleRegistry::class);
         $this->app->singleton(Services\BlockSchemaService::class);
@@ -73,8 +74,8 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
         // still intact) so each queued run can re-seed it before working.
         $this->app->make(Services\BlockSchemaService::class)->captureRegistration();
 
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'twill-ai');
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'twill-ai');
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
         $this->registerRoutes();
         $this->registerNavigation();
@@ -91,7 +92,7 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
             'name' => config('twill-ai.ui.title', 'Twill AI'),
             'description' => 'AI content assistant for the Twill admin, with an optional MCP connector for external clients.',
             'package' => 'yotech-ai/twill-cms-ai-assistant',
-            'route' => config('twill.admin_route_name_prefix', 'twill.') . 'ai.index',
+            'route' => config('twill.admin_route_name_prefix', 'twill.').'ai.index',
         ];
     }
 
@@ -121,11 +122,25 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
             'retry_after' => ((int) $config->get('twill-ai.timeout', 600)) + 60,
             'after_commit' => false,
         ]);
+    }
 
-        if (! $this->mcpAvailable()) {
-            return;
-        }
-
+    /**
+     * MCP-only config defaults.
+     *
+     * Deliberately filled from boot(), NOT register(), so this gate and the one
+     * guarding registerMcp() are evaluated at the same moment. When they were
+     * split across register() and boot(), anything that set
+     * `twill-ai.mcp.enabled` between the two — a host service provider, a
+     * testing environment hook — produced the worst possible outcome: the MCP
+     * routes registered while the guard they authenticate on did not, so every
+     * request to the endpoint died with "Auth guard [twill-mcp] is not defined"
+     * instead of the connector simply staying dormant.
+     *
+     * Booting also means Passport's own config is already merged, which is what
+     * makes the passport.guard fill below honest rather than order-dependent.
+     */
+    protected function registerMcpConfigDefaults(): void
+    {
         // A dedicated guard rather than claiming `api`, which in another host's
         // application is very likely Sanctum's.
         $this->fillConfig('auth.guards.twill-mcp', [
@@ -169,17 +184,17 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
         }
 
         $this->publishes([
-            __DIR__ . '/../config/twill-ai.php' => config_path('twill-ai.php'),
+            __DIR__.'/../config/twill-ai.php' => config_path('twill-ai.php'),
         ], 'twill-ai-config');
 
         $this->publishes([
-            __DIR__ . '/../resources/views' => resource_path('views/vendor/twill-ai'),
+            __DIR__.'/../resources/views' => resource_path('views/vendor/twill-ai'),
         ], 'twill-ai-views');
 
         // Optional: the assets are served from a package route by default and
         // never need publishing. Publishing them only shortens the URL.
         $this->publishes([
-            __DIR__ . '/../resources/dist' => public_path('vendor/twill-ai'),
+            __DIR__.'/../resources/dist' => public_path('vendor/twill-ai'),
         ], 'twill-ai-assets');
     }
 
@@ -190,15 +205,15 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
         }
 
         Route::middleware(['web', 'twill_auth:twill_users', 'impersonate', 'localization'])
-            ->prefix(rtrim(ltrim(config('twill.admin_app_path', 'admin'), '/'), '/') . '/ai')
-            ->name(config('twill.admin_route_name_prefix', 'twill.') . 'ai.')
-            ->group(__DIR__ . '/../routes/admin.php');
+            ->prefix(rtrim(ltrim(config('twill.admin_app_path', 'admin'), '/'), '/').'/ai')
+            ->name(config('twill.admin_route_name_prefix', 'twill.').'ai.')
+            ->group(__DIR__.'/../routes/admin.php');
 
         // Built JS/CSS, served with a far-future cache header and an ETag so no
         // publish step is required and the files can never go stale.
         Route::middleware(['web'])
-            ->prefix(rtrim(ltrim(config('twill.admin_app_path', 'admin'), '/'), '/') . '/ai')
-            ->name(config('twill.admin_route_name_prefix', 'twill.') . 'ai.')
+            ->prefix(rtrim(ltrim(config('twill.admin_app_path', 'admin'), '/'), '/').'/ai')
+            ->name(config('twill.admin_route_name_prefix', 'twill.').'ai.')
             ->group(function (): void {
                 Route::get('asset/{file}', Http\Controllers\AssetController::class)
                     ->where('file', 'twill-ai\.(iife\.js|css)')
@@ -211,7 +226,7 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
         TwillNavigation::addLink(
             NavigationLink::make()
                 ->title(config('twill-ai.ui.title', 'Twill AI'))
-                ->forRoute(config('twill.admin_route_name_prefix', 'twill.') . 'ai.index')
+                ->forRoute(config('twill.admin_route_name_prefix', 'twill.').'ai.index')
         );
     }
 
@@ -238,7 +253,7 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
             // The full-page chat already mounts the app; two instances on one
             // page would fight over the same DOM ids.
             $routeName = Route::currentRouteName() ?? '';
-            $aiPrefix = config('twill.admin_route_name_prefix', 'twill.') . 'ai.';
+            $aiPrefix = config('twill.admin_route_name_prefix', 'twill.').'ai.';
 
             if (str_starts_with($routeName, $aiPrefix)) {
                 return;
@@ -260,12 +275,16 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
             return;
         }
 
+        // Must precede the provider: routes/mcp.php declares middleware
+        // auth:twill-mcp, and that guard is defined here.
+        $this->registerMcpConfigDefaults();
+
         $this->app->register(Mcp\McpServiceProvider::class);
     }
 
     protected function mcpAvailable(): bool
     {
         return (bool) config('twill-ai.mcp.enabled', false)
-            && class_exists(\Laravel\Mcp\Server::class);
+            && class_exists(Server::class);
     }
 }

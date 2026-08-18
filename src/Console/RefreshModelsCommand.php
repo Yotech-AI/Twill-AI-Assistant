@@ -2,9 +2,9 @@
 
 namespace TwillAi\Console;
 
-use TwillAi\Services\SettingsService;
 use Illuminate\Console\Command;
 use Throwable;
+use TwillAi\Services\SettingsService;
 
 /**
  * Refreshes the configured provider's model list. Run on a schedule (e.g.

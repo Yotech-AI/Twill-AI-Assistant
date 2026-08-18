@@ -2,10 +2,10 @@
 
 namespace TwillAi\Mcp\Console;
 
-use TwillAi\Mcp\Models\McpClient;
 use Illuminate\Console\Command;
 use Laravel\Passport\Client;
 use Laravel\Passport\Token;
+use TwillAi\Mcp\Models\McpClient;
 
 class ListClientsCommand extends Command
 {

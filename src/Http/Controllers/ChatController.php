@@ -2,12 +2,12 @@
 
 namespace TwillAi\Http\Controllers;
 
-use TwillAi\Exceptions\TwillAiException;
-use TwillAi\Http\Requests\SendMessageRequest;
-use TwillAi\Services\ChatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use TwillAi\Exceptions\TwillAiException;
+use TwillAi\Http\Requests\SendMessageRequest;
+use TwillAi\Services\ChatService;
 
 class ChatController extends Controller
 {

@@ -2,12 +2,12 @@
 
 namespace TwillAi\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controller;
 use TwillAi\Exceptions\TwillAiException;
 use TwillAi\Http\Requests\SaveApiKeyRequest;
 use TwillAi\Http\Requests\UpdateSettingsRequest;
 use TwillAi\Services\SettingsService;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Routing\Controller;
 
 /**
  * Install-wide Twill AI settings (provider, API key, default model, extra

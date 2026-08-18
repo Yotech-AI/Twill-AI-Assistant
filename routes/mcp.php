@@ -53,6 +53,6 @@ Mcp::web(config('twill-ai.mcp.path', 'mcp/twill'), TwillContentServer::class)
     ->middleware([
         'auth:twill-mcp',
         ActAsTwillUser::class,
-        'throttle:' . config('twill-ai.mcp.throttle', '30,1'),
+        'throttle:'.config('twill-ai.mcp.throttle', '30,1'),
     ])
     ->name('mcp.twill');
