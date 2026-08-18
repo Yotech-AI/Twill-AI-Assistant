@@ -212,8 +212,9 @@ return [
     | unless BOTH this flag is true and laravel/mcp is installed, so a site can
     | run the assistant with no OAuth stack at all.
     |
-    | After enabling: php artisan passport:keys, then
-    | php artisan twill-ai:mcp-client to authorise a connector.
+    | After enabling: php artisan passport:keys, set passport.guard to
+    | twill_users, then php artisan mcp:client-create to authorise a connector.
+    | Run php artisan twill-ai:doctor to check all of that at once.
     |
     */
 

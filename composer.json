@@ -18,12 +18,12 @@
     "pestphp/pest-plugin-laravel": "^4.0",
     "laravel/pint": "^1.24",
     "laravel/mcp": "^0.9",
-    "laravel/passport": "^13.7",
+    "laravel/passport": "^13.7.1",
     "phpoffice/phpword": "^1.4"
   },
   "suggest": {
     "laravel/mcp": "Required for the MCP connector (^0.5.9 || ^0.9).",
-    "laravel/passport": "Required for the MCP connector's OAuth 2.1 flow (^13.7).",
+    "laravel/passport": "Required for the MCP connector's OAuth 2.1 flow (^13.7.1 — 13.7.0 and below carry CVE-2026-39976 in the token guard).",
     "phpoffice/phpword": "Required to read .docx chat attachments (^1.4)."
   },
   "autoload": {

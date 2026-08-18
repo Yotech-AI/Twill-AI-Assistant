@@ -50,7 +50,8 @@ class InstallCommand extends Command
             . ' → Settings and save a provider API key.');
 
         if (config('twill-ai.mcp.enabled')) {
-            $this->line('  5. MCP is enabled: run php artisan passport:keys, then twill-ai:mcp-client to authorise a connector.');
+            $this->line('  5. MCP is enabled: run php artisan passport:keys, set passport.guard to twill_users,');
+            $this->line('     then php artisan mcp:client-create to authorise a connector.');
         } else {
             $this->newLine();
             $this->line('The MCP connector is off. To enable it, install laravel/mcp and laravel/passport,');
