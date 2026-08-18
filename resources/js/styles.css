@@ -1,0 +1,910 @@
+/* Twill AI — standalone styles. Every class is `tai-` prefixed to stay out of
+   Twill's admin CSS. The drawer z-index is kept BELOW Twill's modals/media
+   library so those always win. */
+
+:root {
+    --tai-accent: #1652f0;
+    --tai-accent-soft: #e8eeff;
+    --tai-text: #1a1a1a;
+    --tai-muted: #8b8b8b;
+    --tai-border: #e3e3e3;
+    --tai-bg: #ffffff;
+    --tai-bg-soft: #f7f7f9;
+    --tai-radius: 10px;
+    --tai-z: 450;
+    --tai-font: inherit;
+}
+
+/* ---------- Page layout ---------- */
+
+.tai-page {
+    display: flex;
+    gap: 0;
+    height: calc(100vh - 230px);
+    min-height: 560px;
+    background: var(--tai-bg);
+    border: 1px solid var(--tai-border);
+    border-radius: var(--tai-radius);
+    overflow: hidden;
+    margin: 20px;
+}
+
+/* ---------- Sidebar ---------- */
+
+.tai-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--tai-border);
+    background: var(--tai-bg-soft);
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 10px;
+}
+
+.tai-sidebar__search {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--tai-border);
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--tai-bg);
+}
+
+.tai-sidebar__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.tai-sidebar__empty {
+    color: var(--tai-muted);
+    font-size: 13px;
+    padding: 10px 6px;
+}
+
+.tai-sidebar__item {
+    display: flex;
+    align-items: center;
+    border-radius: 8px;
+    margin-bottom: 2px;
+}
+
+.tai-sidebar__item:hover { background: #ededf0; }
+.tai-sidebar__item--active { background: var(--tai-accent-soft); }
+
+.tai-sidebar__title {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    background: none;
+    border: 0;
+    padding: 8px 10px;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    min-width: 0;
+}
+
+.tai-sidebar__name {
+    font-size: 13px;
+    color: var(--tai-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
+}
+
+.tai-sidebar__meta { font-size: 11px; color: var(--tai-muted); }
+
+.tai-sidebar__tools {
+    display: none;
+    gap: 2px;
+    padding-right: 6px;
+}
+
+.tai-sidebar__item:hover .tai-sidebar__tools { display: inline-flex; }
+
+/* ---------- Panel ---------- */
+
+.tai-panel {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--tai-bg);
+    font-family: var(--tai-font);
+}
+
+.tai-panel--widget { height: 100%; }
+
+.tai-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--tai-border);
+    background: var(--tai-bg);
+}
+
+.tai-panel__brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--tai-text);
+}
+
+.tai-panel__spark, .tai-empty__spark, .tai-launcher__spark { color: var(--tai-accent); }
+
+.tai-panel__actions {
+    margin-left: auto;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.tai-model-picker {
+    border: 1px solid var(--tai-border);
+    border-radius: 8px;
+    background: var(--tai-bg-soft);
+    font-size: 12px;
+    padding: 5px 8px;
+    color: var(--tai-text);
+    max-width: 190px;
+}
+
+.tai-icon-button {
+    border: 1px solid var(--tai-border);
+    background: var(--tai-bg);
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1;
+    padding: 6px 8px;
+    color: var(--tai-text);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tai-icon-button:hover { background: var(--tai-bg-soft); }
+
+/* ---------- Thread ---------- */
+
+.tai-thread {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--tai-bg-soft);
+}
+
+.tai-empty {
+    margin: auto;
+    max-width: 420px;
+    text-align: center;
+    color: var(--tai-muted);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.tai-empty__spark { font-size: 26px; margin-bottom: 6px; }
+.tai-empty__title { font-size: 16px; font-weight: 600; color: var(--tai-text); margin-bottom: 4px; }
+.tai-empty__hint { font-size: 12.5px; margin-top: 10px; font-style: italic; }
+
+.tai-message { display: flex; flex-direction: column; max-width: 92%; }
+.tai-message--user { align-self: flex-end; align-items: flex-end; }
+.tai-message--assistant { align-self: flex-start; align-items: flex-start; }
+
+.tai-message__bubble {
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--tai-text);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.tai-message--user .tai-message__bubble {
+    background: #e7e9f0;
+    color: var(--tai-text);
+    border-bottom-right-radius: 4px;
+}
+
+.tai-message--assistant .tai-message__bubble {
+    background: var(--tai-bg);
+    border: 1px solid var(--tai-border);
+    border-bottom-left-radius: 4px;
+    white-space: normal;
+}
+
+/* @-mention pills inside chat bubbles read as white labels on the gray bubble. */
+.tai-message__bubble .tai-mention-pill { background: #fff; color: #44485a; }
+
+.tai-message__error {
+    color: #c0392b;
+    font-size: 12px;
+    margin: 6px 2px 0;
+}
+
+/* ---------- Markdown ---------- */
+
+.tai-markdown > :first-child { margin-top: 0; }
+.tai-markdown > :last-child { margin-bottom: 0; }
+.tai-markdown p { margin: 0 0 8px; }
+.tai-markdown ul, .tai-markdown ol { margin: 0 0 8px; padding-left: 20px; }
+.tai-markdown h1, .tai-markdown h2, .tai-markdown h3, .tai-markdown h4 { margin: 12px 0 6px; font-size: 14px; }
+.tai-markdown a { color: var(--tai-accent); text-decoration: underline; }
+.tai-markdown code {
+    background: var(--tai-bg-soft);
+    border: 1px solid var(--tai-border);
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: 12px;
+}
+.tai-markdown pre {
+    background: #16181d;
+    color: #e8e8e8;
+    border-radius: 8px;
+    padding: 10px;
+    overflow-x: auto;
+    font-size: 12px;
+}
+.tai-markdown pre code { background: none; border: 0; color: inherit; }
+.tai-markdown table { border-collapse: collapse; margin: 6px 0; }
+.tai-markdown th, .tai-markdown td { border: 1px solid var(--tai-border); padding: 4px 8px; font-size: 12.5px; }
+
+/* ---------- Tool chips ---------- */
+
+.tai-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.tai-tool-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    border-radius: 999px;
+    padding: 4px 10px;
+    border: 1px solid var(--tai-border);
+    background: var(--tai-bg);
+    color: var(--tai-muted);
+}
+
+.tai-tool-chip--done { color: #1d7a36; border-color: #cce8d4; background: #f1faf3; }
+.tai-tool-chip--error { color: #c0392b; border-color: #f2cfca; background: #fdf3f1; }
+.tai-tool-chip--running { color: var(--tai-accent); border-color: #ccd9ff; background: var(--tai-accent-soft); }
+
+.tai-tool-chip__link {
+    color: var(--tai-accent);
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: 2px;
+}
+.tai-tool-chip__link:hover { text-decoration: underline; }
+
+.tai-spinner {
+    width: 10px;
+    height: 10px;
+    border: 2px solid #ccd9ff;
+    border-top-color: var(--tai-accent);
+    border-radius: 50%;
+    animation: tai-spin 0.7s linear infinite;
+}
+
+@keyframes tai-spin { to { transform: rotate(360deg); } }
+
+.tai-typing { display: inline-flex; gap: 4px; padding: 4px 2px; }
+.tai-typing span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--tai-muted);
+    animation: tai-bounce 1.2s infinite;
+}
+.tai-typing span:nth-child(2) { animation-delay: 0.15s; }
+.tai-typing span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes tai-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ---------- Composer ---------- */
+
+.tai-error {
+    color: #c0392b;
+    font-size: 12.5px;
+    margin: 0;
+    padding: 8px 16px;
+    background: #fdf3f1;
+    border-top: 1px solid #f2cfca;
+}
+
+.tai-composer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 14px;
+    padding: 8px 10px 8px;
+    border: 1px solid var(--tai-border);
+    border-radius: 16px;
+    background: var(--tai-bg);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tai-composer:focus-within {
+    border-color: var(--tai-accent);
+    box-shadow: 0 0 0 3px var(--tai-accent-soft);
+}
+
+.tai-composer__field {
+    position: relative;
+    display: flex;
+}
+
+.tai-composer__input {
+    flex: 1;
+    resize: none;
+    border: 0;
+    background: transparent;
+    padding: 6px 6px;
+    font: inherit;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--tai-text);
+    min-height: 46px;
+    max-height: 200px;
+    transition: opacity 0.2s ease;
+}
+
+.tai-composer__input:focus { outline: none; }
+
+/* While the assistant is working: gray the input and show an animated label. */
+.tai-composer--working .tai-composer__input {
+    opacity: 0.6;
+    color: transparent;
+    cursor: default;
+}
+
+/* ---------- Composer toolbar ---------- */
+
+.tai-composer__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.tai-composer__left, .tai-composer__right {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tai-tool-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--tai-border);
+    background: var(--tai-bg);
+    color: var(--tai-text);
+    font-size: 19px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tai-tool-button:hover { background: var(--tai-bg-soft); }
+.tai-tool-button:disabled { opacity: 0.45; cursor: default; }
+.tai-file-input { display: none; }
+
+/* ---------- Composer attachments ---------- */
+
+.tai-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 2px 2px 0;
+}
+
+.tai-attachment {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 220px;
+    padding: 4px 8px;
+    border: 1px solid var(--tai-border);
+    border-radius: 9px;
+    background: var(--tai-bg-soft);
+    font-size: 12px;
+    color: var(--tai-text);
+}
+
+.tai-attachment--error { border-color: #f2cfca; background: #fdf3f1; color: #c0392b; }
+.tai-attachment__thumb { width: 24px; height: 24px; border-radius: 5px; object-fit: cover; flex-shrink: 0; }
+.tai-attachment__icon { font-size: 15px; }
+.tai-attachment__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+
+.tai-attachment__remove {
+    border: 0;
+    background: none;
+    color: var(--tai-muted);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0 2px;
+    line-height: 1;
+}
+
+.tai-attachment__remove:hover { color: var(--tai-text); }
+
+.tai-attachment__spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--tai-border);
+    border-top-color: var(--tai-accent);
+    border-radius: 50%;
+    animation: tai-spin 0.7s linear infinite;
+}
+
+/* ---------- @ mention drawer ---------- */
+
+.tai-mention {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 6px);
+    background: var(--tai-bg);
+    border: 1px solid var(--tai-border);
+    border-radius: 12px;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.16);
+    max-height: 264px;
+    overflow-y: auto;
+    z-index: 6;
+}
+
+.tai-mention__list { list-style: none; margin: 0; padding: 5px; }
+
+.tai-mention__item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.tai-mention__item--active { background: var(--tai-accent-soft); }
+.tai-mention__module { font-size: 11px; font-weight: 600; color: var(--tai-accent); white-space: nowrap; }
+.tai-mention__sep { color: var(--tai-muted); }
+.tai-mention__title { color: var(--tai-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tai-mention__empty { padding: 12px; color: var(--tai-muted); font-size: 12.5px; text-align: center; }
+
+/* ---------- Attachments shown on a sent message ---------- */
+
+.tai-msg-files { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.tai-message--user .tai-msg-files { justify-content: flex-end; }
+
+.tai-msg-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 220px;
+    padding: 4px 8px;
+    border: 1px solid var(--tai-border);
+    border-radius: 9px;
+    background: var(--tai-bg);
+    font-size: 12px;
+}
+
+.tai-msg-file__thumb { width: 20px; height: 20px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+.tai-msg-file__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; color: var(--tai-text); }
+
+.tai-working {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    display: inline-flex;
+    align-items: baseline;
+    font-size: 13.5px;
+    color: var(--tai-muted);
+    pointer-events: none;
+}
+
+.tai-working__dots {
+    display: inline-flex;
+    width: 14px;
+    margin-left: 1px;
+}
+
+.tai-working__dots span {
+    animation: tai-working-dot 1.4s infinite both;
+}
+
+.tai-working__dots span:nth-child(2) { animation-delay: 0.2s; }
+.tai-working__dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes tai-working-dot {
+    0%, 80%, 100% { opacity: 0; }
+    40% { opacity: 1; }
+}
+
+.tai-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 0;
+    background: var(--tai-accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 10px 18px;
+    cursor: pointer;
+}
+
+.tai-button:disabled { opacity: 0.45; cursor: default; }
+.tai-button--stop { background: #c0392b; }
+.tai-button--block { width: 100%; }
+
+/* ---------- Floating widget ---------- */
+
+.tai-launcher {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: calc(var(--tai-z) - 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--tai-text);
+    color: #fff;
+    border: 0;
+    border-radius: 999px;
+    padding: 11px 20px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.tai-launcher:hover { transform: translateX(-50%) translateY(-1px); }
+
+.tai-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 50vw;
+    min-width: 420px;
+    max-width: 860px;
+    z-index: var(--tai-z);
+    background: var(--tai-bg);
+    border-left: 1px solid var(--tai-border);
+    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.16);
+    display: flex;
+}
+
+.tai-slide-enter-active, .tai-slide-leave-active { transition: transform 0.25s ease; }
+.tai-slide-enter-from, .tai-slide-leave-to { transform: translateX(100%); }
+
+@media (max-width: 900px) {
+    .tai-drawer { width: 100vw; min-width: 0; }
+    .tai-sidebar { width: 230px; }
+}
+
+/* ---------- Secondary nav (Chat | Uploads) ---------- */
+
+.tai-page-wrap { display: flex; flex-direction: column; }
+
+.tai-subnav {
+    display: flex;
+    gap: 2px;
+    margin: 0 20px;
+    border-bottom: 1px solid var(--tai-border);
+}
+
+.tai-subnav__item {
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    color: var(--tai-muted);
+    padding: 9px 12px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.tai-subnav__item:hover { color: var(--tai-text); }
+.tai-subnav__item--active { color: var(--tai-text); border-bottom-color: var(--tai-accent); font-weight: 600; }
+
+/* The page already carries its own top margin; tighten it under the sub-nav. */
+.tai-page-wrap .tai-page { margin-top: 12px; }
+
+/* ---------- Uploads page ---------- */
+
+.tai-uploads { margin: 16px 20px; }
+
+.tai-uploads__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.tai-uploads__title { font-size: 18px; font-weight: 600; margin: 0; color: var(--tai-text); }
+.tai-uploads__sub { font-size: 12.5px; color: var(--tai-muted); margin: 4px 0 0; }
+
+.tai-uploads__empty {
+    color: var(--tai-muted);
+    font-size: 14px;
+    padding: 48px 20px;
+    text-align: center;
+    border: 1px dashed var(--tai-border);
+    border-radius: var(--tai-radius);
+}
+
+.tai-file-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.tai-file-card {
+    position: relative;
+    border: 1px solid var(--tai-border);
+    border-radius: 10px;
+    background: var(--tai-bg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.tai-file-card__preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 120px;
+    background: var(--tai-bg-soft);
+    text-decoration: none;
+}
+
+.tai-file-card__thumb { width: 100%; height: 100%; object-fit: cover; }
+.tai-file-card__icon { font-size: 34px; }
+.tai-file-card__body { padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; }
+.tai-file-card__name { font-size: 12.5px; color: var(--tai-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tai-file-card__meta { font-size: 11px; color: var(--tai-muted); }
+
+.tai-file-card__badge {
+    font-size: 10.5px;
+    color: #1d7a36;
+    background: #f1faf3;
+    border: 1px solid #cce8d4;
+    border-radius: 6px;
+    padding: 1px 6px;
+    align-self: flex-start;
+    margin-top: 2px;
+}
+
+.tai-file-card__remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    border: 0;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    border-radius: 6px;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.tai-file-card__remove:hover { background: rgba(192, 57, 43, 0.92); }
+
+/* ---------- Composer "+" menu ---------- */
+
+.tai-plus { position: relative; display: inline-flex; }
+
+.tai-plus__backdrop { position: fixed; inset: 0; z-index: 7; }
+
+.tai-plus__menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    z-index: 8;
+    min-width: 184px;
+    background: var(--tai-bg);
+    border: 1px solid var(--tai-border);
+    border-radius: 12px;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.16);
+    padding: 6px;
+}
+
+.tai-plus__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    color: var(--tai-text);
+    padding: 9px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.tai-plus__item:hover { background: var(--tai-bg-soft); }
+.tai-plus__icon { font-size: 14px; width: 18px; text-align: center; }
+
+/* ---------- "Use files" picker drawer (inside the panel) ---------- */
+
+.tai-filepicker {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 300px;
+    max-width: 80%;
+    background: var(--tai-bg);
+    border-left: 1px solid var(--tai-border);
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+    z-index: 9;
+    display: flex;
+    flex-direction: column;
+}
+
+.tai-filepicker__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--tai-border);
+    font-size: 13px;
+}
+
+.tai-filepicker__empty { padding: 22px; color: var(--tai-muted); font-size: 12.5px; text-align: center; }
+.tai-filepicker__list { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; }
+
+.tai-filepicker__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.tai-filepicker__item:hover { background: var(--tai-bg-soft); }
+.tai-filepicker__item--on { background: var(--tai-accent-soft); }
+.tai-filepicker__thumb { width: 30px; height: 30px; border-radius: 5px; object-fit: cover; flex-shrink: 0; }
+
+.tai-filepicker__icon {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    background: var(--tai-bg-soft);
+    border-radius: 5px;
+    flex-shrink: 0;
+}
+
+.tai-filepicker__name { flex: 1; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tai-filepicker__check { color: var(--tai-accent); font-weight: 700; }
+
+/* ---------- Contenteditable composer + inline mention pills ---------- */
+
+.tai-composer__input {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-y: auto;
+}
+
+.tai-composer__input--empty::before {
+    content: attr(data-placeholder);
+    color: var(--tai-muted);
+    pointer-events: none;
+}
+
+.tai-mention-pill {
+    display: inline;
+    background: #eceef3;
+    border-radius: 6px;
+    padding: 1px 6px;
+    font-size: 12px;
+    color: #44485a;
+    white-space: nowrap;
+}
+
+/* ---------- Icons (Heroicons) ---------- */
+
+.tai-icon { display: inline-block; flex-shrink: 0; vertical-align: middle; }
+
+/* Icon-only buttons that are not already flex containers. */
+.tai-attachment__remove,
+.tai-file-card__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---------- Settings page ---------- */
+
+.tai-settings { margin: 16px 20px; max-width: 640px; }
+.tai-settings__head { margin-bottom: 16px; }
+.tai-settings__title { font-size: 18px; font-weight: 600; margin: 0; color: var(--tai-text); }
+.tai-settings__sub { font-size: 12.5px; color: var(--tai-muted); margin: 4px 0 0; }
+.tai-settings__empty { color: var(--tai-muted); font-size: 14px; padding: 40px; text-align: center; }
+
+.tai-settings__group { margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--tai-border); }
+.tai-settings__label { display: block; font-size: 12.5px; font-weight: 600; color: var(--tai-text); margin: 0 0 6px; }
+
+.tai-settings__select,
+.tai-settings__input,
+.tai-settings__textarea {
+    width: 100%;
+    border: 1px solid var(--tai-border);
+    border-radius: 8px;
+    padding: 9px 10px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--tai-text);
+    background: var(--tai-bg);
+}
+
+.tai-settings__textarea { resize: vertical; line-height: 1.5; }
+
+.tai-settings__select:focus,
+.tai-settings__input:focus,
+.tai-settings__textarea:focus {
+    outline: none;
+    border-color: var(--tai-accent);
+    box-shadow: 0 0 0 3px var(--tai-accent-soft);
+}
+
+.tai-settings__keyrow { display: flex; align-items: center; gap: 8px; }
+.tai-settings__keyrow .tai-settings__input { flex: 1; }
+
+.tai-settings__masked {
+    flex: 1;
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--tai-text);
+    background: var(--tai-bg-soft);
+    border: 1px solid var(--tai-border);
+    border-radius: 8px;
+    padding: 9px 10px;
+}
+
+.tai-settings__badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; border-radius: 6px; padding: 3px 8px; white-space: nowrap; }
+.tai-settings__badge--ok { color: #1d7a36; background: #f1faf3; border: 1px solid #cce8d4; }
+.tai-settings__hint { font-size: 11.5px; color: var(--tai-muted); margin: 6px 0 0; line-height: 1.5; }
+.tai-settings__error { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; color: #c0392b; margin: 6px 0 0; }
+.tai-settings__actions { display: flex; align-items: center; gap: 10px; }
+.tai-settings__link { border: 0; background: none; color: var(--tai-accent); font: inherit; font-size: 11.5px; cursor: pointer; text-decoration: underline; padding: 0; }
+.tai-settings__link:disabled { opacity: 0.5; cursor: default; }
