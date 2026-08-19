@@ -2,6 +2,7 @@
 
 use A17\Twill\TwillServiceProvider;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Passport\Passport;
 use TwillAi\Services\BlockSchemaService;
 use TwillAi\Services\ModuleRegistry;
 use TwillAi\TwillAiServiceProvider;
@@ -30,10 +31,15 @@ it('applies Twill, Passport and package migrations on sqlite', function () {
         ->and(Schema::hasTable(config('twill.medias_table', 'twill_medias')))->toBeTrue()
         ->and(Schema::hasTable(config('twill.related_table', 'twill_related')))->toBeTrue();
 
-    // Passport, for the MCP connector's OAuth path.
-    expect(Schema::hasTable('oauth_clients'))->toBeTrue();
+    // Passport backs the MCP connector's OAuth path, but it is an optional
+    // dependency — a host can run the admin assistant without it, and CI has a
+    // job that removes it entirely. Assert its schema only when it is installed.
+    if (class_exists(Passport::class)) {
+        expect(Schema::hasTable('oauth_clients'))->toBeTrue();
+    }
 
-    // Ours.
+    // Ours. These ship unconditionally: the mcp_* tables are created either way
+    // so that enabling the connector later never needs a migration.
     expect(Schema::hasTable('twill_ai_chats'))->toBeTrue()
         ->and(Schema::hasTable('twill_ai_settings'))->toBeTrue()
         ->and(Schema::hasTable('twill_ai_chat_files'))->toBeTrue()

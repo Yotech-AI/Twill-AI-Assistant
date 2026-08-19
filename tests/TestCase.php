@@ -47,14 +47,20 @@ abstract class TestCase extends Orchestra
      */
     protected function getPackageProviders($app): array
     {
-        return [
+        return array_values(array_filter([
             TwillServiceProvider::class,
+            // Optional: laravel/mcp and laravel/passport are require-dev here and
+            // merely suggested for a host, so a site can run the admin assistant
+            // without the connector. Testbench REGISTERS whatever this returns,
+            // which loads the class — listing them unconditionally makes the
+            // whole suite unbootable when they are absent, which is precisely
+            // the shape CI's no-connector job runs.
             PassportServiceProvider::class,
             AiServiceProvider::class,
             McpServiceProvider::class,
             FixtureServiceProvider::class,
             TwillAiServiceProvider::class,
-        ];
+        ], static fn (string $provider): bool => class_exists($provider)));
     }
 
     /**
@@ -80,6 +86,12 @@ abstract class TestCase extends Orchestra
             __DIR__.'/../database/migrations',
             __DIR__.'/Fixtures/migrations',
         ] as $path) {
+            // Passport's directory is absent when the connector is not
+            // installed, and migrate --path errors on a path that is not there.
+            if (! is_dir($path)) {
+                continue;
+            }
+
             $this->artisan('migrate', [
                 '--path' => $path,
                 '--realpath' => true,
