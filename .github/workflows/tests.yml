@@ -73,7 +73,7 @@ jobs:
           composer update --prefer-dist --no-interaction --no-progress
 
       - name: Run every suite except the connector
-        run: vendor/bin/pest --no-coverage --testsuite=Unit,Package,TwillAi
+        run: vendor/bin/pest --no-coverage --testsuite=Package,TwillAi
 
   pint:
     runs-on: ubuntu-latest

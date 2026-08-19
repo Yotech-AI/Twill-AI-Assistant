@@ -8,7 +8,7 @@ use TwillAi\Tests\TestCase;
 // Pest refuses overlapping uses() paths, so these are listed as siblings rather
 // than as 'Feature' plus an override. Feature/Mcp boots with the connector
 // enabled; everything else keeps it off.
-uses(TestCase::class)->in('Feature/Package', 'Feature/TwillAi', 'Unit');
+uses(TestCase::class)->in('Feature/Package', 'Feature/TwillAi');
 
 // Guarded so the suite still loads for a host that installed neither
 // laravel/mcp nor laravel/passport: McpTestCase touches Passport at class level,

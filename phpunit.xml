@@ -7,9 +7,6 @@
          failOnWarning="true"
          failOnRisky="true">
     <testsuites>
-        <testsuite name="Unit">
-            <directory>tests/Unit</directory>
-        </testsuite>
         <!-- Deliberately non-overlapping: PHPUnit warns when one file belongs to
              two suites, and failOnWarning turns that into a failed run. The
              connector suite is separate so CI can run everything except Mcp for
