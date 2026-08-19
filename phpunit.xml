@@ -10,14 +10,18 @@
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
-        <testsuite name="Feature">
-            <directory>tests/Feature</directory>
+        <!-- Deliberately non-overlapping: PHPUnit warns when one file belongs to
+             two suites, and failOnWarning turns that into a failed run. The
+             connector suite is separate so CI can run everything except Mcp for
+             a host that installed neither laravel/mcp nor laravel/passport. -->
+        <testsuite name="Package">
+            <directory>tests/Feature/Package</directory>
         </testsuite>
-        <!-- For a host that never installed laravel/mcp or laravel/passport.
-             Everything except the connector suite must still pass. -->
-        <testsuite name="FeatureWithoutMcp">
-            <directory>tests/Feature</directory>
-            <exclude>tests/Feature/Mcp</exclude>
+        <testsuite name="TwillAi">
+            <directory>tests/Feature/TwillAi</directory>
+        </testsuite>
+        <testsuite name="Mcp">
+            <directory>tests/Feature/Mcp</directory>
         </testsuite>
     </testsuites>
     <source>

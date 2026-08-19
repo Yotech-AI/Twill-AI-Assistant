@@ -103,15 +103,28 @@ user approval before creating the public repo, and it has not been given.
    example module's real columns and media roles, and are omitted when there are
    none.
 
-## Blocker — CI cannot run until the repos exist
+## The plugin-support dependency is gone (2026-08-19)
 
-`composer.json` now carries a `repositories` entry pointing at
-`../twill-plugin-support`, because that package has no remote and is not on
-Packagist, so **`composer install` failed outright before this**. The path repo
-pins `1.0.0` explicitly (path repositories do not read git tags). The CI workflow
-works around it by checking out `Yotech-AI/twill-plugin-support` as a sibling —
-which needs that repo to exist. Once it does, switch to Packagist and drop the
-`repositories` entry.
+`yotech-ai/twill-plugin-support` was never published, so requiring it meant
+`composer install` could not run for anyone. The Plugins-page code is now
+vendored at `src/PluginPage/` under `TwillAi\PluginPage`, matching what
+twill-cms-redirect (`TwillRedirects\PluginPage`) and twill-cms-seo-suite
+(`TwillSeo\PluginPage`) already did. Files were copied from the redirect package
+so all three stay byte-equivalent apart from the namespace.
+
+With that, the package has **no unpublished dependencies**, the `repositories`
+entry is gone, CI needs no sibling checkout, and Packagist is unblocked.
+
+Covered by `tests/Feature/Package/PluginsPageTest.php`, which pins the two
+container-key strings as the interop contract they are.
+
+### Fixed at the same time
+
+The `FeatureWithoutMcp` testsuite overlapped the `Feature` suite, and PHPUnit
+warns when a file belongs to two suites. With `failOnWarning="true"` that made
+the default `vendor/bin/pest` run exit non-zero while still printing
+"140 passed" — easy to miss by reading only the summary. Suites are now
+non-overlapping: `Unit`, `Package`, `TwillAi`, `Mcp`.
 
 ## Not done
 
@@ -149,18 +162,20 @@ production** — check `composer show laravel/passport` on both.
 
 ## The shared Plugins page
 
-Lives in a separate package: `C:\Users\Jeffrey\Herd\twill-plugin-support`
-(`yotech-ai/twill-plugin-support`, namespace `Yotech\TwillPluginSupport\`, tagged
-v1.0.0, local git only). It adds a "Plugins" entry to the Twill nav, right of
-Media Library, listing every installed Yotech plugin.
+Vendored at `src/PluginPage/` under `TwillAi\PluginPage`. Every Yotech plugin
+carries its own copy under its own namespace rather than sharing a package, so
+each one installs standalone. It adds a "Plugins" entry to the Twill nav, right
+of Media Library, listing every installed Yotech plugin.
 
 Interop contract — these container key strings must never change:
 `yotech.twill-plugins.registry` and `yotech.twill-plugins.page-owner`.
-First provider to register owns the page; later ones only add their manifest.
-Because the keys are plain strings holding PHP built-ins, a package carrying its
-own vendored copy still cooperates. Proven: `twill-cms-redirects` v2.0.0 still has
-a vendored copy and coexists fine — migrating it onto the shared package is
-optional cleanup (would be v2.1.0), not a prerequisite.
+First provider to register owns the page and creates it; later ones only add
+their manifest. Because the keys are plain strings holding PHP built-ins, copies
+under different namespaces cooperate — that is the whole reason vendoring works
+and why nothing may be added to a manifest that is not a scalar.
+
+Known copies to keep in step if the mechanism ever changes:
+`TwillAi\PluginPage`, `TwillRedirects\PluginPage`, `TwillSeo\PluginPage`.
 
 ## How this was verified (no automated tests exist yet)
 

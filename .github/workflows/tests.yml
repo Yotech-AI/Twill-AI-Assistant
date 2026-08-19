@@ -8,14 +8,6 @@ on:
 permissions:
   contents: read
 
-# The package is checked out into a subdirectory rather than the workspace root,
-# because composer.json resolves yotech-ai/twill-plugin-support through a path
-# repository at ../twill-plugin-support and actions/checkout refuses any path
-# above the workspace. Both checkouts therefore sit side by side under it.
-defaults:
-  run:
-    working-directory: package
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -36,17 +28,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: package
-
-      # Drop this once twill-plugin-support is on Packagist, along with the
-      # `repositories` entry in composer.json.
-      - name: Check out twill-plugin-support
-        uses: actions/checkout@v4
-        with:
-          repository: Yotech-AI/twill-plugin-support
-          path: twill-plugin-support
-          ref: v1.0.0
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -78,15 +59,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: package
-
-      - name: Check out twill-plugin-support
-        uses: actions/checkout@v4
-        with:
-          repository: Yotech-AI/twill-plugin-support
-          path: twill-plugin-support
-          ref: v1.0.0
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -100,8 +72,8 @@ jobs:
           composer remove --no-update --no-interaction --dev laravel/mcp laravel/passport
           composer update --prefer-dist --no-interaction --no-progress
 
-      - name: Run tests, excluding the connector suite
-        run: vendor/bin/pest --no-coverage --testsuite=Unit,FeatureWithoutMcp
+      - name: Run every suite except the connector
+        run: vendor/bin/pest --no-coverage --testsuite=Unit,Package,TwillAi
 
   pint:
     runs-on: ubuntu-latest
@@ -109,15 +81,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: package
-
-      - name: Check out twill-plugin-support
-        uses: actions/checkout@v4
-        with:
-          repository: Yotech-AI/twill-plugin-support
-          path: twill-plugin-support
-          ref: v1.0.0
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2

@@ -105,7 +105,9 @@ These are enforced in `PayloadBuilder` and the tool list, not in config, and no 
 
 ## The Plugins page
 
-This package registers itself on the shared Plugins page provided by [`yotech-ai/twill-plugin-support`](https://github.com/Yotech-AI/twill-plugin-support), which adds a **Plugins** entry to the admin navigation listing every installed Yotech plugin. Nothing to configure.
+This package adds a **Plugins** entry to the admin navigation, next to the Media Library, listing every installed Yotech plugin with a link to its own screen. Nothing to configure.
+
+The page is created by whichever Yotech plugin loads first; the rest just add themselves to it. That coordination happens through two container keys — `yotech.twill-plugins.registry` and `yotech.twill-plugins.page-owner` — which carry only PHP built-ins, so each plugin ships its own copy of the code under its own namespace and they still interoperate. Install one Yotech plugin or five: you get exactly one Plugins page, and no plugin depends on any other.
 
 ## Commands
 

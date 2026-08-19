@@ -9,8 +9,7 @@
     "php": "^8.3",
     "illuminate/support": "^12.0 || ^13.0",
     "area17/twill": "^3.5",
-    "laravel/ai": "^0.3.2",
-    "yotech-ai/twill-plugin-support": "^1.0"
+    "laravel/ai": "^0.3.2"
   },
   "require-dev": {
     "orchestra/testbench": "^10.0 || ^11.0",
@@ -49,15 +48,5 @@
     }
   },
   "minimum-stability": "stable",
-  "prefer-stable": true,
-  "repositories": [{
-    "name": "twill-plugin-support",
-    "type": "path",
-    "url": "../twill-plugin-support",
-    "options": {
-      "versions": {
-        "yotech-ai/twill-plugin-support": "1.0.0"
-      }
-    }
-  }]
+  "prefer-stable": true
 }

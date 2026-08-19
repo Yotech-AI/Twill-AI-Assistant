@@ -8,7 +8,7 @@ use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Laravel\Mcp\Server;
-use Yotech\TwillPluginSupport\TwillPluginServiceProvider;
+use TwillAi\PluginPage\TwillPluginServiceProvider;
 
 /**
  * Drop-in service provider for the Twill AI assistant.
