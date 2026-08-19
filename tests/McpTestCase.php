@@ -105,6 +105,17 @@ abstract class McpTestCase extends TestCase
             file_put_contents($public, openssl_pkey_get_details($key)['key']);
         }
 
+        // league/oauth2-server refuses a key file that is group- or
+        // world-readable, and skips that check entirely on Windows — so a suite
+        // developed here passes locally and fails on a Linux CI runner with
+        // "Key file permissions are not correct". Applied whenever the path is
+        // first resolved rather than only at generation, so a pair left behind
+        // by an earlier run with wrong permissions is repaired instead of
+        // failing forever.
+        foreach ([$private, $public] as $file) {
+            @chmod($file, 0o600);
+        }
+
         return static::$passportKeyPath = $directory;
     }
 }
