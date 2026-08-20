@@ -31,7 +31,7 @@ class PluginsNavigation extends BaseTwillNavigation
     public static function pluginsLink(): NavigationLink
     {
         return NavigationLink::make()
-            ->title(__('Plugins'))
+            ->title(__('Addons'))
             ->forRoute(static::routeName())
             ->onlyWhen(fn () => Auth::user() !== null && Route::has(static::routeName()));
     }
