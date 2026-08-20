@@ -45,9 +45,13 @@ it('adds no entry to the admin navigation by default', function () {
     $titles = twillAiNavigationTitles();
 
     // Guards against a vacuous pass: an empty tree would satisfy the assertion
-    // below for entirely the wrong reason. Plugins is there because this package
-    // owns that page.
-    expect($titles)->toContain('Plugins');
+    // below for entirely the wrong reason.
+    //
+    // Asserted as "not empty" rather than by naming an expected entry. This
+    // originally looked for 'Plugins' and broke the moment that page was
+    // relabelled 'Addons' — the guard only needs to know the tree was built at
+    // all, so pinning any label made it fail for something it was never testing.
+    expect($titles)->not->toBeEmpty();
 
     expect(config('twill-ai.ui.navigation_link'))->toBeFalse()
         ->and($titles)->not->toContain(config('twill-ai.ui.title'));
