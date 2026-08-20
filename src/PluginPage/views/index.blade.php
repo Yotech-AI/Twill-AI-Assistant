@@ -1,84 +1,184 @@
 @extends('twill::layouts.free')
 
-@section('customPageContent')
+{{--
+    The stylesheet is pushed to `extra_css` in <head>, NOT inlined in the
+    section below. Twill yields page content inside <div id="app">, which is
+    Vue's mount point, and Vue's template compiler discards <style> elements it
+    finds while compiling the in-DOM template — so an inline block renders the
+    markup unstyled. The head stack is outside Vue's reach.
+--}}
+@push('extra_css')
     <style>
-        .plugins-page__header {
-            margin: 40px 0 20px;
+        .yo-plugins {
+            color-scheme: light;
+            --yo-plugins-surface: #fff;
+            --yo-plugins-border: #e0e0e0;
+            --yo-plugins-border-hover: #b9b9b9;
+            --yo-plugins-text: #1a1a1a;
+            --yo-plugins-muted: #6b6b6b;
+            --yo-plugins-faint: #9a9a9a;
+
+            margin: 32px 0 64px;
         }
-        .plugins-page__header h2 {
+
+        .yo-plugins__title {
+            margin: 0;
             font-size: 20px;
             font-weight: 600;
+            line-height: 1.3;
+            color: var(--yo-plugins-text);
         }
-        .plugins-page__header p {
-            margin-top: 5px;
-            opacity: 0.6;
+
+        .yo-plugins__intro {
+            margin: 6px 0 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--yo-plugins-muted);
         }
-        .plugins-page__list {
+
+        .yo-plugins__list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-            margin: 20px 0 60px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+            padding: 0;
+            list-style: none;
         }
-        .plugins-page__card {
-            display: block;
+
+        .yo-plugins__card {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
             padding: 20px;
-            border: 1px solid rgba(115, 115, 115, 0.3);
-            border-radius: 4px;
-            text-decoration: none;
+            background: var(--yo-plugins-surface);
+            border: 1px solid var(--yo-plugins-border);
+            border-radius: 8px;
             color: inherit;
+            text-decoration: none;
+            transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
         }
-        a.plugins-page__card:hover {
-            border-color: rgba(115, 115, 115, 0.7);
+
+        a.yo-plugins__card:hover,
+        a.yo-plugins__card:focus-visible {
+            border-color: var(--yo-plugins-border-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+            text-decoration: none;
         }
-        .plugins-page__card-title {
+
+        a.yo-plugins__card:focus-visible {
+            outline: 2px solid #1652f0;
+            outline-offset: 2px;
+        }
+
+        .yo-plugins__head {
             display: flex;
             align-items: baseline;
             gap: 8px;
-            font-size: 16px;
+        }
+
+        .yo-plugins__icon {
+            flex: none;
+            font-size: 15px;
+            line-height: 1;
+        }
+
+        .yo-plugins__name {
+            font-size: 15px;
             font-weight: 600;
+            line-height: 1.3;
+            color: var(--yo-plugins-text);
         }
-        .plugins-page__card-version {
-            font-size: 12px;
-            font-weight: 400;
-            opacity: 0.6;
+
+        /* Pushed right so the version reads as metadata, not part of the name. */
+        .yo-plugins__version {
+            margin-left: auto;
+            flex: none;
+            font-size: 11px;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            color: var(--yo-plugins-muted);
         }
-        .plugins-page__card-description {
-            margin-top: 8px;
-            line-height: 1.4;
+
+        .yo-plugins__description {
+            margin: 10px 0 0;
+            font-size: 13px;
+            line-height: 1.55;
+            color: var(--yo-plugins-muted);
         }
-        .plugins-page__card-package {
-            display: block;
-            margin-top: 12px;
-            font-size: 12px;
-            opacity: 0.5;
+
+        /* Sits at the card's foot whatever the description length, so a row of
+           cards keeps its package names on one line. */
+        .yo-plugins__package {
+            margin-top: auto;
+            padding-top: 16px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 11px;
+            color: var(--yo-plugins-faint);
+            overflow-wrap: anywhere;
+        }
+
+        .yo-plugins__empty {
+            margin-top: 24px;
+            padding: 32px 20px;
+            border: 1px dashed var(--yo-plugins-border);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--yo-plugins-muted);
+        }
+
+        /* No prefers-color-scheme block on purpose. Twill's admin appearance is
+           a CMS setting and Twill emits no class or media signal for it, so
+           keying off the operating system would turn these cards dark while the
+           admin around them stayed light. Pinning color-scheme also stops the
+           browser darkening form controls on a dark OS. */
+
+        @media (prefers-reduced-motion: reduce) {
+            .yo-plugins__card {
+                transition: none;
+            }
+
+            a.yo-plugins__card:hover,
+            a.yo-plugins__card:focus-visible {
+                transform: none;
+            }
         }
     </style>
+@endpush
 
-    <div class="plugins-page__header">
-        <h2>{{ __('Plugins') }}</h2>
-        <p>{{ __('Installed Twill plugins. Click a plugin to open it.') }}</p>
-    </div>
+@section('customPageContent')
+    <div class="yo-plugins">
+        <h1 class="yo-plugins__title">{{ __('Plugins') }}</h1>
+        <p class="yo-plugins__intro">{{ __('Installed Twill plugins. Select one to open it.') }}</p>
 
-    <div class="plugins-page__list">
-        @forelse($plugins as $plugin)
-            @php
-                $href = $plugin['url']
-                    ?? (isset($plugin['route']) && \Illuminate\Support\Facades\Route::has($plugin['route'])
-                        ? route($plugin['route'])
-                        : null);
-            @endphp
+        @if($plugins->isEmpty())
+            <p class="yo-plugins__empty">
+                {{ __('No plugins are registered yet. Installing a Yotech Twill package adds it here automatically.') }}
+            </p>
+        @else
+            <ul class="yo-plugins__list">
+                @foreach($plugins as $plugin)
+                    @php
+                        $href = $plugin['url']
+                            ?? (isset($plugin['route']) && \Illuminate\Support\Facades\Route::has($plugin['route'])
+                                ? route($plugin['route'])
+                                : null);
+                    @endphp
 
-            @if($href)
-                <a class="plugins-page__card" href="{{ $href }}">
-                    @include('twill-plugins::_card', ['plugin' => $plugin])
-                </a>
-            @else
-                <div class="plugins-page__card">
-                    @include('twill-plugins::_card', ['plugin' => $plugin])
-                </div>
-            @endif
-        @empty
-            <p>{{ __('No plugins registered.') }}</p>
-        @endforelse
+                    <li>
+                        @if($href)
+                            <a class="yo-plugins__card" href="{{ $href }}">
+                                @include('twill-plugins::_card', ['plugin' => $plugin])
+                            </a>
+                        @else
+                            <div class="yo-plugins__card">
+                                @include('twill-plugins::_card', ['plugin' => $plugin])
+                            </div>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        @endif
     </div>
 @stop

@@ -1,0 +1,20 @@
+{
+    "name": "twill-cms-ai-assistant",
+    "private": true,
+    "description": "Build tooling for the Twill AI admin chat. The built assets in resources/dist are committed so adopters need no JS build step.",
+    "type": "module",
+    "scripts": {
+        "build": "vite build --config resources/js/vite.config.js",
+        "watch": "vite build --watch --config resources/js/vite.config.js"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-vue": "^5.2.1",
+        "vite": "^6.0.7"
+    },
+    "dependencies": {
+        "@heroicons/vue": "^2.2.0",
+        "dompurify": "^3.2.3",
+        "marked": "^15.0.6",
+        "vue": "^3.5.13"
+    }
+}

@@ -4,6 +4,11 @@
 # fixture CMS or the CI workflow.
 /.github            export-ignore
 /tests              export-ignore
+# The built assets in resources/dist are what ships; the toolchain that
+# produces them is not needed by a host.
+/package.json       export-ignore
+/package-lock.json  export-ignore
+/resources/js       export-ignore
 /docs/session-handoff.md export-ignore
 /.gitattributes     export-ignore
 /.gitignore         export-ignore

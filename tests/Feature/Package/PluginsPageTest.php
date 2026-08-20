@@ -62,3 +62,31 @@ it('renders the Plugins page listing this plugin', function () {
 it('keeps the Plugins page behind the admin login', function () {
     $this->get(route(PluginsNavigation::routeName()))->assertRedirect();
 });
+
+/**
+ * Regression: the page's CSS used to be inlined inside the content section, and
+ * rendered completely unstyled. Twill yields page content inside
+ * `<div class="app" id="app">` — Vue's mount point — and Vue's template compiler
+ * DISCARDS <style> elements it encounters while compiling the in-DOM template.
+ * The markup survived, the styling did not.
+ *
+ * The fix is the `extra_css` stack, which renders in <head>, outside the mount
+ * point. This asserts position rather than mere presence, because a <style>
+ * block that merely exists is exactly the broken state.
+ */
+it('renders its stylesheet in the head, above Vue\'s mount point', function () {
+    $html = $this->actingAs(twillAdmin('plugins-css@example.com'), 'twill_users')
+        ->get(route(PluginsNavigation::routeName()))
+        ->assertOk()
+        ->getContent();
+
+    $styleAt = strpos($html, '.yo-plugins__card');
+    $mountAt = strpos($html, 'id="app"');
+
+    expect($styleAt)->not->toBeFalse('The Plugins page stylesheet was not rendered at all.')
+        ->and($mountAt)->not->toBeFalse()
+        ->and($styleAt)->toBeLessThan(
+            $mountAt,
+            'The stylesheet renders inside the Vue mount point, where Vue strips it.'
+        );
+});

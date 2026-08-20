@@ -3,16 +3,37 @@
    library so those always win. */
 
 :root {
-    --tai-accent: #1652f0;
-    --tai-accent-soft: #e8eeff;
-    --tai-text: #1a1a1a;
-    --tai-muted: #8b8b8b;
+    --tai-accent: #007aff; /* Apple system blue */
+    --tai-accent-strong: #0062d6;
+    --tai-accent-soft: rgba(0, 122, 255, 0.14);
+    --tai-text: #1d1d1f;
+    --tai-muted: #86868b;
     --tai-border: #e3e3e3;
     --tai-bg: #ffffff;
-    --tai-bg-soft: #f7f7f9;
+    --tai-bg-soft: #f5f5f7;
     --tai-radius: 10px;
     --tai-z: 450;
-    --tai-font: inherit;
+    --tai-font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',
+        system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+    /* ---- Glass ----
+       Used by the side drawer only. The blur needs something behind it, and the
+       drawer is the one surface that floats over the admin. The full-page chat
+       at /admin/ai sits on an opaque background where glass would just look
+       like haze, so it keeps the solid surfaces above. */
+    --tai-glass-bg: rgba(255, 255, 255, 0.72);
+    --tai-glass-blur: saturate(180%) blur(30px);
+    --tai-glass-border: rgba(255, 255, 255, 0.55);
+    --tai-glass-specular: rgba(255, 255, 255, 0.9);
+    --tai-glass-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.16),
+        0 2px 8px rgba(0, 0, 0, 0.06);
+    --tai-glass-radius: 22px;
+    --tai-inset: 12px;
+
+    /* Apple's standard decelerate curve — motion arrives quickly and settles,
+       rather than easing symmetrically in and out. */
+    --tai-ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* ---------- Page layout ---------- */
@@ -127,9 +148,21 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 14px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--tai-border);
     background: var(--tai-bg);
+}
+
+/* In the drawer the header is a translucent title bar: a hairline instead of a
+   full border, and no fill of its own so the glass runs unbroken to the top. */
+.tai-drawer .tai-panel__header {
+    background: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.tai-drawer .tai-panel__brand {
+    font-weight: 590; /* SF's semibold sits between 500 and 700 */
+    letter-spacing: -0.01em;
 }
 
 .tai-panel__brand {
@@ -205,9 +238,11 @@
 .tai-message--user { align-self: flex-end; align-items: flex-end; }
 .tai-message--assistant { align-self: flex-start; align-items: flex-start; }
 
+/* 18px with a 6px tail corner: the proportion Messages uses, which reads as a
+   speech bubble at this size where a uniform radius reads as a plain box. */
 .tai-message__bubble {
     padding: 10px 14px;
-    border-radius: 14px;
+    border-radius: 18px;
     font-size: 13.5px;
     line-height: 1.55;
     color: var(--tai-text);
@@ -216,20 +251,40 @@
 }
 
 .tai-message--user .tai-message__bubble {
-    background: #e7e9f0;
-    color: var(--tai-text);
-    border-bottom-right-radius: 4px;
+    background: var(--tai-accent);
+    color: #fff;
+    border-bottom-right-radius: 6px;
 }
 
 .tai-message--assistant .tai-message__bubble {
     background: var(--tai-bg);
     border: 1px solid var(--tai-border);
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 6px;
     white-space: normal;
 }
 
-/* @-mention pills inside chat bubbles read as white labels on the gray bubble. */
+/* On glass the assistant bubble is translucent too, or it would punch an opaque
+   rectangle through the panel. */
+.tai-drawer .tai-message--assistant .tai-message__bubble {
+    background: rgba(255, 255, 255, 0.66);
+    border-color: rgba(0, 0, 0, 0.07);
+    -webkit-backdrop-filter: saturate(160%) blur(8px);
+    backdrop-filter: saturate(160%) blur(8px);
+}
+
+/* @-mention pills: on the accent-filled user bubble they need to read as light
+   labels on blue, not as the grey chips the assistant bubble carries. */
 .tai-message__bubble .tai-mention-pill { background: #fff; color: #44485a; }
+
+.tai-message--user .tai-message__bubble .tai-mention-pill {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+
+.tai-message--user .tai-message__bubble a {
+    color: #fff;
+    text-decoration-color: rgba(255, 255, 255, 0.5);
+}
 
 .tai-message__error {
     color: #c0392b;
@@ -340,14 +395,36 @@
     margin: 12px 14px;
     padding: 8px 10px 8px;
     border: 1px solid var(--tai-border);
-    border-radius: 16px;
+    border-radius: 18px;
     background: var(--tai-bg);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+        border-color 0.2s var(--tai-ease),
+        box-shadow 0.2s var(--tai-ease);
 }
 
 .tai-composer:focus-within {
     border-color: var(--tai-accent);
-    box-shadow: 0 0 0 3px var(--tai-accent-soft);
+    box-shadow: 0 0 0 4px var(--tai-accent-soft);
+}
+
+/* A raised glass tray, so the composer reads as floating on the panel rather
+   than as a docked footer bar. */
+.tai-drawer .tai-composer {
+    background: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.tai-drawer .tai-composer:focus-within {
+    background: rgba(255, 255, 255, 0.82);
+    border-color: var(--tai-accent);
+    box-shadow:
+        0 0 0 4px var(--tai-accent-soft),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .tai-composer__field {
@@ -587,27 +664,127 @@
 
 .tai-launcher:hover { transform: translateX(-50%) translateY(-1px); }
 
+/* The launcher is the drawer's entry point, so it wears the same material:
+   a dark translucent capsule with a specular top edge. */
+.tai-launcher {
+    background: rgba(29, 29, 31, 0.72);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    letter-spacing: -0.01em;
+    box-shadow:
+        0 8px 28px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    transition:
+        transform 0.22s var(--tai-ease),
+        background-color 0.22s var(--tai-ease);
+}
+
+.tai-launcher:hover { background: rgba(29, 29, 31, 0.85); }
+
+.tai-launcher:active { transform: translateX(-50%) scale(0.97); }
+
+.tai-launcher:focus-visible {
+    outline: 3px solid var(--tai-accent);
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tai-launcher { transition: background-color 0.15s linear; }
+    .tai-launcher:hover,
+    .tai-launcher:active { transform: translateX(-50%); }
+}
+
+/* A floating glass panel inset from the viewport rather than a slab welded to
+   the edge. Inset on three sides so it reads as a card the admin shows through,
+   which is the whole point of the blur. */
 .tai-drawer {
     position: fixed;
-    top: 0;
-    right: 0;
-    height: 100vh;
+    top: var(--tai-inset);
+    right: var(--tai-inset);
+    bottom: var(--tai-inset);
+    height: auto;
     width: 50vw;
     min-width: 420px;
     max-width: 860px;
     z-index: var(--tai-z);
-    background: var(--tai-bg);
-    border-left: 1px solid var(--tai-border);
-    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.16);
     display: flex;
+    overflow: hidden;
+
+    /* Pinned, not inherited. Twill's admin appearance is a CMS setting that
+       emits no class or media signal, so following the operating system would
+       darken this panel while the admin behind it stayed light — and would
+       darken the native select and textarea inside it too. */
+    color-scheme: light;
+
+    border-radius: var(--tai-glass-radius);
+    background: var(--tai-glass-bg);
+    -webkit-backdrop-filter: var(--tai-glass-blur);
+    backdrop-filter: var(--tai-glass-blur);
+
+    /* Outer hairline plus an inset specular line along the top edge — the
+       highlight is what stops translucent panels reading as flat transparency. */
+    border: 2px solid var(--tai-glass-border);
+    box-shadow:
+        var(--tai-glass-shadow),
+        inset 0 1px 0 var(--tai-glass-specular);
 }
 
-.tai-slide-enter-active, .tai-slide-leave-active { transition: transform 0.25s ease; }
-.tai-slide-enter-from, .tai-slide-leave-to { transform: translateX(100%); }
+/* Without backdrop-filter the translucent fill would leave text sitting on
+   whatever is behind it, so fall back to an opaque surface. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .tai-drawer {
+        background: var(--tai-bg);
+    }
+}
+
+/* The panel is the glass; its own chrome must not paint over it. The thread in
+   particular carries an opaque grey fill on the full page, which inside the
+   drawer would cover the blur entirely. */
+.tai-drawer .tai-panel,
+.tai-drawer .tai-page-wrap,
+.tai-drawer .tai-thread {
+    background: transparent;
+}
+
+/* The sidebar keeps a fill so the thread stays readable beside it, but a
+   translucent one, and its divider drops to a hairline. */
+.tai-drawer .tai-sidebar {
+    background: rgba(255, 255, 255, 0.34);
+    border-right: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.tai-slide-enter-active,
+.tai-slide-leave-active {
+    transition:
+        transform 0.42s var(--tai-ease),
+        opacity 0.28s var(--tai-ease);
+}
+
+.tai-slide-enter-from,
+.tai-slide-leave-to {
+    transform: translateX(calc(100% + var(--tai-inset)));
+    opacity: 0;
+}
 
 @media (max-width: 900px) {
-    .tai-drawer { width: 100vw; min-width: 0; }
+    .tai-drawer {
+        width: calc(100vw - (var(--tai-inset) * 2));
+        min-width: 0;
+    }
+
     .tai-sidebar { width: 230px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tai-slide-enter-active,
+    .tai-slide-leave-active {
+        transition: opacity 0.15s linear;
+    }
+
+    .tai-slide-enter-from,
+    .tai-slide-leave-to {
+        transform: none;
+    }
 }
 
 /* ---------- Secondary nav (Chat | Uploads) ---------- */
@@ -908,3 +1085,4 @@
 .tai-settings__actions { display: flex; align-items: center; gap: 10px; }
 .tai-settings__link { border: 0; background: none; color: var(--tai-accent); font: inherit; font-size: 11.5px; cursor: pointer; text-decoration: underline; padding: 0; }
 .tai-settings__link:disabled { opacity: 0.5; cursor: default; }
+
