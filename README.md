@@ -18,7 +18,9 @@ php artisan twill-ai:install && php artisan migrate
 
 Then describe your modules in `config/twill-ai.php`, run a queue worker, and save a provider API key on the assistant's Settings page. `php artisan twill-ai:doctor` checks all of it.
 
-There is no provider to register, no view to override and no asset to publish. The package registers its own routes, navigation entry, views, migrations, private upload disk and job queue from your existing Twill configuration, so it adapts to a custom admin path automatically.
+There is no provider to register, no view to override and no asset to publish. The package registers its own routes, views, migrations, private upload disk and job queue from your existing Twill configuration, so it adapts to a custom admin path automatically.
+
+Editors reach the assistant two ways: the **Plugins** page, and the floating widget on every admin screen. It deliberately adds no entry of its own to the main navigation — set `twill-ai.ui.navigation_link` to `true` if your editors want one.
 
 ## The module registry
 
