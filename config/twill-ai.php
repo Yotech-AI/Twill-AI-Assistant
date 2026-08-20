@@ -244,6 +244,16 @@ return [
 
     'ui' => [
         'title' => 'Twill AI',
+
+        /*
+         * Add a top-level entry to the Twill admin navigation.
+         *
+         * Off by default. The assistant already appears on the shared Plugins
+         * page and behind the floating widget on every admin screen, so a third
+         * entry in the main navigation is duplication rather than access. Turn
+         * it on for a site whose editors live in the assistant.
+         */
+        'navigation_link' => false,
         'empty_intro' => "Your AI content assistant. Tell me what you'd like to create or change and I'll draft it for you to review.",
         'empty_hint' => null,
     ],

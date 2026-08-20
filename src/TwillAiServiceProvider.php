@@ -221,8 +221,21 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
             });
     }
 
+    /**
+     * Off by default: the shared Plugins page is where a plugin lives, and
+     * listing every installed plugin in the admin's main navigation as well
+     * defeats the point of having that page. Editors still reach the assistant
+     * from the floating widget on every screen.
+     *
+     * A host whose editors use the assistant constantly can set
+     * `twill-ai.ui.navigation_link` to true and get a top-level entry back.
+     */
     protected function registerNavigation(): void
     {
+        if (! config('twill-ai.ui.navigation_link', false)) {
+            return;
+        }
+
         TwillNavigation::addLink(
             NavigationLink::make()
                 ->title(config('twill-ai.ui.title', 'Twill AI'))
