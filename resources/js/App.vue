@@ -18,9 +18,19 @@ provide('config', props.config);
 const ACTIVE_CHAT_KEY = 'twill_ai_active_chat';
 const DRAWER_OPEN_KEY = 'twill_ai_drawer_open';
 const ACTIVE_VIEW_KEY = 'twill_ai_active_view';
+const EXPANDED_KEY = 'twill_ai_expanded';
 
 const isWidget = computed(() => props.config.mode === 'widget');
 const drawerOpen = ref(localStorage.getItem(DRAWER_OPEN_KEY) === '1');
+
+// Three states, not two: launcher -> drawer -> fullscreen. Remembered, so the
+// panel reopens the way it was left.
+const expanded = ref(localStorage.getItem(EXPANDED_KEY) === '1');
+
+function toggleExpanded() {
+    expanded.value = !expanded.value;
+    localStorage.setItem(EXPANDED_KEY, expanded.value ? '1' : '0');
+}
 const activeView = ref(localStorage.getItem(ACTIVE_VIEW_KEY) || 'chat');
 const activeChatId = ref(null);
 const chats = ref([]);
@@ -40,12 +50,13 @@ function persistActiveChat(id) {
     }
 }
 
+// The widget used to skip this, because it had nowhere to show a chat list.
+// It now has two: the header's history dropdown and the fullscreen sidebar.
 async function refreshChats() {
-    if (isWidget.value) return;
     try {
         const data = await api.listChats();
         chats.value = data.chats || [];
-    } catch { /* sidebar stays empty */ }
+    } catch { /* history stays empty */ }
 }
 
 function toggleDrawer() {
@@ -133,13 +144,35 @@ onMounted(async () => {
         </button>
 
         <transition name="tai-slide">
-            <div v-show="drawerOpen" class="tai-drawer">
+            <div
+                v-show="drawerOpen"
+                class="tai-drawer"
+                :class="{ 'tai-drawer--expanded': expanded }"
+            >
+                <!-- Only in fullscreen: at drawer width a sidebar would leave
+                     the conversation too narrow to read, which is why the
+                     collapsed state keeps history in the header dropdown. -->
+                <Sidebar
+                    v-if="expanded"
+                    :chats="chats"
+                    :active-chat-id="activeChatId"
+                    :settings-url="config.urls.page + '#settings'"
+                    @select="selectChat"
+                    @new-chat="newChat"
+                    @rename="renameChat"
+                    @delete="deleteChat"
+                />
+
                 <ChatPanel
                     ref="panel"
                     mode="widget"
                     :active-chat-id="activeChatId"
-                    @chat-created="persistActiveChat"
-                    @end-chat="endChat"
+                    :chats="chats"
+                    :expanded="expanded"
+                    @chat-created="onChatCreated"
+                    @select-chat="selectChat"
+                    @new-chat="newChat"
+                    @toggle-expand="toggleExpanded"
                     @collapse="toggleDrawer"
                 />
             </div>

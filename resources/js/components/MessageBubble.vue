@@ -47,6 +47,10 @@ const userHtml = computed(() => {
 
 <template>
     <div class="tai-message" :class="`tai-message--${message.role}`">
+        <!-- Assistant only. A user's own messages are right-aligned in a filled
+             accent bubble already, so labelling them adds noise, not clarity. -->
+        <span v-if="message.role === 'assistant'" class="tai-message__author">AI agent</span>
+
         <div v-if="message.toolEvents && message.toolEvents.length" class="tai-tools">
             <span
                 v-for="(toolEvent, index) in message.toolEvents"
