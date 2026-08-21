@@ -7,6 +7,9 @@ use Illuminate\Console\Command;
 use Laravel\Mcp\Server;
 use Laravel\Passport\Contracts\OAuthenticatable;
 use Throwable;
+use TwillAi\Models\TwillAiSetting;
+use TwillAi\Seo\PublishedEditPolicy;
+use TwillAi\Seo\SeoBridgeContract;
 use TwillAi\Services\BlockSchemaService;
 use TwillAi\Services\ModuleRegistry;
 
@@ -27,7 +30,7 @@ class DoctorCommand extends Command
         $this->info('Twill AI doctor');
         $this->line('  app env:       '.config('app.env'));
         $this->line('  queue:         '.config('twill-ai.queue_connection').' / '.config('twill-ai.queue'));
-        $this->line('  anthropic key: '.(filled(config('ai.providers.anthropic.key')) ? 'set' : 'MISSING'));
+        $this->line('  api key:       '.$this->describeApiKey());
 
         try {
             $this->line('  blocks loaded: '.TwillBlocks::getBlocks()->count());
@@ -83,6 +86,104 @@ class DoctorCommand extends Command
     /**
      * Reports the host-application wiring the package cannot supply itself.
      */
+    /**
+     * Where the API key actually comes from.
+     *
+     * Reading config alone was wrong: a key entered on the admin Settings
+     * screen is encrypted into twill_ai_settings and only pushed into
+     * `ai.providers.*.key` by SettingsService::applyRuntimeConfig() when a chat
+     * runs. So the normal, fully-working setup reported MISSING, and the one
+     * genuinely broken state — a key saved but never verified, which
+     * applyRuntimeConfig refuses to apply — was indistinguishable from it.
+     */
+    protected function describeApiKey(): string
+    {
+        $stored = $this->storedSettings();
+
+        if ($stored !== null && filled($stored->api_key)) {
+            $masked = $stored->maskedKey() ?? 'set';
+
+            if ($stored->verified_at === null) {
+                return "admin settings, {$masked} — NOT VERIFIED, so it is never applied."
+                    .' Re-save it on the Settings screen.';
+            }
+
+            if (empty($stored->available_models)) {
+                return "admin settings, {$masked} — verified, but no model list is cached,"
+                    .' so it is never applied. Run: php artisan twill-ai:refresh-models';
+            }
+
+            return "admin settings, {$masked} (verified {$stored->verified_at->toDateString()})";
+        }
+
+        // Second source: a host that never opens the Settings screen and wires
+        // the key through config/ai.php or the environment instead.
+        $provider = $stored?->provider ?: 'anthropic';
+
+        if (filled(config("ai.providers.{$provider}.key"))) {
+            return "config, ai.providers.{$provider}.key";
+        }
+
+        return 'MISSING — add it in the admin under Twill AI > Settings, or set it in config/ai.php';
+    }
+
+    /**
+     * Read-only on purpose. A diagnostic must not create the settings row, and
+     * must still run on a site whose migrations have not been run yet.
+     */
+    protected function storedSettings(): ?TwillAiSetting
+    {
+        try {
+            return TwillAiSetting::query()->first();
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * The SEO integration is gated on a config flag AND the Suite being
+     * installed, and it moves a safety default — whether the agent may edit
+     * entries a human already published. Both belong in a wiring report:
+     * "which of the two reasons is it off for" and "can it touch live pages"
+     * are the questions this integration actually raises.
+     */
+    protected function reportSeo(): void
+    {
+        $available = app(SeoBridgeContract::class)->available();
+
+        if ($available) {
+            $this->line('  [OK ] SEO Suite integration is on — get_seo, analyze_seo_text and update_seo added.');
+        } elseif (! config('twill-ai.seo.enabled', true)) {
+            $this->line('  [ - ] SEO Suite integration is disabled (twill-ai.seo.enabled is false).');
+        } else {
+            $this->line('  [ - ] SEO Suite integration is off — yotech-ai/twill-cms-seo-suite is not installed.');
+        }
+
+        // Spelled out rather than dumped, because `null` is the default and it
+        // means "ask the Suite" — printing the raw value explains nothing.
+        $configured = config('twill-ai.allow_updating_published');
+        $allows = app(PublishedEditPolicy::class)->allows();
+
+        $because = match (true) {
+            is_bool($configured) => 'allow_updating_published is set to '.($configured ? 'true' : 'false'),
+            $available => 'allow_updating_published is null and the Suite is installed',
+            default => 'allow_updating_published is null and the Suite is not installed',
+        };
+
+        $this->line(sprintf(
+            '  [%s] editing ALREADY PUBLISHED entries is %s — %s.',
+            $allows ? ' ! ' : 'OK ',
+            $allows ? 'PERMITTED' : 'refused',
+            $because
+        ));
+
+        if ($allows) {
+            $this->line('         New entries are still created as drafts, and no tool can change');
+            $this->line('         any entry\'s publish state. Set allow_updating_published to false');
+            $this->line('         in config/twill-ai.php to refuse live edits as well.');
+        }
+    }
+
     protected function checkHostWiring(): void
     {
         $this->newLine();
@@ -113,6 +214,7 @@ class DoctorCommand extends Command
                 .' --queue='.config('twill-ai.queue', 'twill-ai'));
         }
 
+        $this->reportSeo();
         if (! config('twill-ai.mcp.enabled')) {
             $this->line('  [ - ] MCP connector is disabled.');
 

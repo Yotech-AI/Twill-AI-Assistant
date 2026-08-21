@@ -147,7 +147,7 @@ Two things hold regardless. The agent still cannot change any entry's publish st
 | Command | Purpose |
 |---|---|
 | `twill-ai:install` | Publish the config and report the remaining setup steps. |
-| `twill-ai:doctor` | Diagnose block registration, host wiring, queue and MCP setup. |
+| `twill-ai:doctor` | Diagnose block registration, host wiring, the API key, queue, SEO and MCP setup. |
 | `twill-ai:refresh-models` | Refresh the provider's model list for the picker. |
 | `mcp:client-create` / `mcp:client-list` / `mcp:client-revoke` | Manage MCP connectors. |
 | `mcp:doctor` | Diagnose the MCP endpoint, its tools and its clients. |
