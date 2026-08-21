@@ -16,6 +16,10 @@ use A17\Twill\Models\Model;
  */
 class Article extends Model
 {
+    // Deliberately NO HasSeo. A `use` inside a class body resolves the trait at
+    // class-load time, so importing it here would make this model — and with it
+    // most of the suite — unloadable on a site without the SEO Suite, which CI
+    // runs on purpose. SeoArticle carries it instead.
     use HasBlocks;
     use HasMedias;
     use HasRelated;

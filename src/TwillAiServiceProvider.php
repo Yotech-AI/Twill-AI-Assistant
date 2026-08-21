@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\View;
 use Laravel\Mcp\Server;
 use TwillAi\PluginPage\TwillPluginServiceProvider;
 use TwillSeo\Analysis\AnalysisRunner;
+use TwillSeo\Services\ModelRegistry;
 use TwillSeo\Services\PaperFactory;
 
 /**
@@ -320,6 +321,7 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
                 ? new Seo\SeoBridge(
                     $this->app->make(PaperFactory::class),
                     $this->app->make(AnalysisRunner::class),
+                    $this->app->make(ModelRegistry::class),
                 )
                 : new Seo\NullSeoBridge
         );

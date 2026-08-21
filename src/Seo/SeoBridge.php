@@ -7,6 +7,7 @@ use Throwable;
 use TwillAi\Exceptions\TwillAiException;
 use TwillSeo\Analysis\AnalysisRunner;
 use TwillSeo\Analysis\Paper\Paper;
+use TwillSeo\Services\ModelRegistry;
 use TwillSeo\Services\PaperFactory;
 use TwillSeo\Services\ScoreCache;
 use TwillSeo\Services\Sitemap\SitemapCache;
@@ -23,6 +24,7 @@ final class SeoBridge implements SeoBridgeContract
     public function __construct(
         private readonly PaperFactory $papers,
         private readonly AnalysisRunner $runner,
+        private readonly ModelRegistry $models,
     ) {}
 
     public function available(): bool
@@ -33,6 +35,7 @@ final class SeoBridge implements SeoBridgeContract
     public function describe(TwillModelContract $entry, string $locale): array
     {
         $this->assertHasSeo($entry);
+        $this->assertRegisteredWithSuite($entry);
 
         // Reuses the Suite's own model-to-Paper resolution rather than
         // reimplementing content extraction, so what the agent is told matches
@@ -119,6 +122,22 @@ final class SeoBridge implements SeoBridgeContract
         if (! method_exists($entry, 'seoEntry')) {
             throw new TwillAiException(sprintf(
                 'The "%s" model has no SEO surface — it does not use the HasSeo behaviour, so it has no metadata or score to read.',
+                class_basename($entry)
+            ));
+        }
+    }
+
+    /**
+     * The two registries are separate lists that can drift: a model can be in
+     * twill-ai.modules and absent from twill-seo.models. When that happens the
+     * Suite falls back to Twill capsules and throws NoCapsuleFoundException,
+     * which tells nobody anything. Name the actual fix instead.
+     */
+    private function assertRegisteredWithSuite(TwillModelContract $entry): void
+    {
+        if ($this->models->keyFor($entry) === null) {
+            throw new TwillAiException(sprintf(
+                'The "%s" model is not registered with the SEO Suite. Add it to the "models" array in config/twill-seo.php — twill-ai.modules and twill-seo.models are separate lists.',
                 class_basename($entry)
             ));
         }

@@ -11,6 +11,7 @@ use Laravel\Passport\PassportServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use TwillAi\Tests\Fixtures\FixtureServiceProvider;
 use TwillAi\TwillAiServiceProvider;
+use TwillSeo\Services\ModelRegistry;
 use TwillSeo\TwillSeoServiceProvider;
 
 abstract class TestCase extends Orchestra
@@ -134,6 +135,22 @@ abstract class TestCase extends Orchestra
         // just because there is only one to write.
         $config->set('translatable.locales', ['en', 'nl']);
         $config->set('twill.locale', 'en');
+
+        // twill-ai.modules and twill-seo.models are SEPARATE lists, and a host
+        // registers its models with both. Registered here the same way, so the
+        // bridge is exercised against a realistic setup rather than one where
+        // the Suite has never heard of the model.
+        if (class_exists(ModelRegistry::class)) {
+            $config->set('twill-seo.models', [
+                'seoArticles' => [
+                    'model' => Fixtures\Models\SeoArticle::class,
+                    // The Suite's default resolver renders blocks through Twill
+                    // capsules, and the fixture CMS registers none. The registry's
+                    // `content` key is the documented way past that.
+                    'content' => Fixtures\FixtureContentResolver::class,
+                ],
+            ]);
+        }
     }
 
     /**
