@@ -147,7 +147,21 @@ return [
     |
     */
 
-    'allow_updating_published' => false,
+    /*
+     | null  = permitted only when the SEO Suite is installed
+     | true  = always permitted
+     | false = never permitted
+     |
+     | null is the default and behaves exactly like false without the Suite, so
+     | no existing site changes behaviour. Improving existing copy is the point
+     | of the SEO integration, and existing copy is usually published — without
+     | scoring there is no signal to improve against, so the permission would be
+     | granted for no benefit.
+     |
+     | CREATING is unaffected: new entries are always drafts, and that is not
+     | configurable.
+     */
+    'allow_updating_published' => null,
 
     'max_blocks_per_request' => 30,
 
