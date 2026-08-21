@@ -238,6 +238,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | SEO Suite integration
+    |--------------------------------------------------------------------------
+    |
+    | When yotech-ai/twill-cms-seo-suite is installed, the assistant gains three
+    | tools: read an entry's score and the assessments explaining it, score
+    | proposed copy WITHOUT saving it, and set SEO metadata.
+    |
+    | Unlike the MCP connector this defaults to ON, because it opens no network
+    | surface and stays completely inert unless the Suite is installed. Set it
+    | false to keep the Suite installed but out of the agent's reach.
+    |
+    | Indexing controls are never writable by the agent — robots_noindex,
+    | robots_nofollow, canonical_url, cornerstone and schema_type_override are
+    | refused in code, on the same reasoning that stops it publishing.
+    |
+    */
+
+    'seo' => [
+        'enabled' => env('TWILL_AI_SEO_ENABLED', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | UI
     |--------------------------------------------------------------------------
     */

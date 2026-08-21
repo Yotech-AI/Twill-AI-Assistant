@@ -18,7 +18,8 @@
     "laravel/pint": "^1.24",
     "laravel/mcp": "^0.9",
     "laravel/passport": "^13.7.1",
-    "phpoffice/phpword": "^1.4"
+    "phpoffice/phpword": "^1.4",
+    "yotech-ai/twill-cms-seo-suite": "^1.0"
   },
   "suggest": {
     "laravel/mcp": "Required for the MCP connector (^0.5.9 || ^0.9).",

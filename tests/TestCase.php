@@ -11,6 +11,7 @@ use Laravel\Passport\PassportServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use TwillAi\Tests\Fixtures\FixtureServiceProvider;
 use TwillAi\TwillAiServiceProvider;
+use TwillSeo\TwillSeoServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -58,6 +59,10 @@ abstract class TestCase extends Orchestra
             PassportServiceProvider::class,
             AiServiceProvider::class,
             McpServiceProvider::class,
+            // The SEO Suite binds the contracts PaperFactory depends on, so its
+            // provider has to run for the bridge to resolve. Optional like the
+            // rest — CI has a job that removes the Suite entirely.
+            TwillSeoServiceProvider::class,
             FixtureServiceProvider::class,
             TwillAiServiceProvider::class,
         ], static fn (string $provider): bool => class_exists($provider)));
@@ -83,6 +88,7 @@ abstract class TestCase extends Orchestra
             $vendor.'/area17/twill/migrations/default',
             $vendor.'/laravel/passport/database/migrations',
             $vendor.'/laravel/ai/database/migrations',
+            $vendor.'/yotech-ai/twill-cms-seo-suite/database/migrations',
             __DIR__.'/../database/migrations',
             __DIR__.'/Fixtures/migrations',
         ] as $path) {

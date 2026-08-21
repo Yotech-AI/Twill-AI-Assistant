@@ -385,16 +385,48 @@ final class SeoBridge implements SeoBridgeContract
         ))->toArray();
     }
 
+    /**
+     * Mirrors HandleSeo::afterSaveHandleSeo, which is the Suite's own writer:
+     * get-or-create the entry, set columns through translationOrNew(), save
+     * only dirty translations, then refresh the caches.
+     *
+     * The cache calls are not optional. Writing meta without them leaves the
+     * SEO panel and the content listing showing a stale score, and a sitemap
+     * page that no longer matches the entry. Both are wrapped exactly as the
+     * Suite wraps them: an analysis or sitemap failure must never take down a
+     * write that already succeeded.
+     */
     public function updateMeta(TwillModelContract $entry, string $locale, array $fields): array
     {
         $this->assertHasSeo($entry);
 
-        $translation = $entry->seoEntry()->firstOrCreate([])
-            ->translations()->firstOrCreate(['locale' => $locale]);
+        $seoEntry = $entry->seoEntry()->firstOrCreate();
 
-        $translation->fill($fields)->save();
+        foreach ($fields as $column => $value) {
+            $trimmed = is_string($value) ? trim($value) : $value;
 
-        return collect($fields)->keys()->all();
+            $seoEntry->translationOrNew($locale)->{$column} = ($trimmed === '' ? null : $trimmed);
+        }
+
+        foreach ($seoEntry->translations as $translation) {
+            if ($translation->isDirty()) {
+                $translation->save();
+            }
+        }
+
+        try {
+            app(\TwillSeo\Services\ScoreCache::class)->refresh($entry);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        try {
+            app(\TwillSeo\Services\Sitemap\SitemapCache::class)->forgetFor($entry);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return array_keys($fields);
     }
 
     private function assertHasSeo(TwillModelContract $entry): void
