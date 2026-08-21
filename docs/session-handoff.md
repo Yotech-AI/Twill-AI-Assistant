@@ -126,6 +126,58 @@ the default `vendor/bin/pest` run exit non-zero while still printing
 "140 passed" — easy to miss by reading only the summary. Suites are now
 non-overlapping: `Unit`, `Package`, `TwillAi`, `Mcp`.
 
+## SEO Suite integration — done (2026-08-21)
+
+Branch `feature/seo-suite-integration`, 11 tasks, spec and plan in
+`docs/superpowers/`. Adds `get_seo`, `analyze_seo_text` and `update_seo` to both
+surfaces when `yotech-ai/twill-cms-seo-suite` is installed.
+
+**Shape.** `src/Seo/SeoBridge.php` is the ONLY file in this package that imports
+`TwillSeo\*`. Everything else depends on `SeoBridgeContract`, which resolves to
+`NullSeoBridge` when the Suite is absent. The gate (`config` && `class_exists`)
+is evaluated once, in `boot()` — the same lifecycle rule the MCP guard bug
+taught us.
+
+**Two plan errors caught before writing code**, by reading the Suite's own
+writer first: the plan's `translations()->firstOrCreate()` was wrong (the Suite
+uses `translationOrNew()` and saves dirty translations), and it omitted the
+score/sitemap cache refresh that `HandleSeo::afterSaveHandleSeo` performs. Both
+are in the bridge now, and `ScoreCache`/`SitemapCache` failures are caught and
+reported rather than allowed to fail the write.
+
+**Published edits.** `allow_updating_published` is now tri-state. `null`
+(default) means "follow the Suite": editable when it is installed. `true`/`false`
+still force it. New content is *always* a draft regardless — the relaxation is
+about improving live copy, never about publishing new copy. Edits to a live
+entry return `was_published: true` plus a warning the agent is told to relay.
+
+**Off-limits fields are refused in code**, not config: `robots_noindex`,
+`robots_nofollow`, `canonical_url`, `cornerstone`, `schema_type_override`.
+
+**The fixture that cost the most time.** `HasSeo` cannot go on the shared
+`Article` fixture: `use SomeTrait;` in a class body resolves at *class-load*
+time, so it would make the entire fixture CMS unloadable in the no-Suite CI job.
+And `SeoArticle` must not extend `Article` — Twill derives translation class,
+slug class and foreign key from the class name, so a subclass needs an override
+per convention and then meets the next one. It is a standalone module on
+`seo_articles` / `seo_article_translations`.
+
+**Verified in three host shapes**, each a throwaway clone with the dependency
+genuinely removed from `vendor/`:
+
+| Shape | Suites | Result |
+|---|---|---|
+| Everything installed | all four | 202 passed |
+| No `laravel/mcp`, no `laravel/passport` | Package, TwillAi, Seo | 164 passed |
+| No SEO Suite | Package, TwillAi, Mcp | 153 passed |
+
+Both no-dependency shapes now have their own CI job. Note the SEO tool *counts*
+are asserted in the `Mcp` suite through the fake bridge, so "adds exactly three"
+is still checked on a machine where the Suite does not exist.
+
+**Consequence for `docs/test-plan.md`:** Test 1.4 counted eight tools. It now
+says eight, or eleven with the Suite, and tells the tester to ask which applies.
+
 ## Not done
 
 - **Phase 4** — CHANGELOG, `docs/connecting-claude.md`, de-pomofit'ing

@@ -65,7 +65,7 @@
 - Consumes: nothing
 - Produces: `SeoBridgeContract` with `available(): bool`, `describe(TwillModelContract $entry, string $locale): array`, `analyzeText(array $paper): array`, `updateMeta(TwillModelContract $entry, string $locale, array $fields): array`. `SeoFields::WRITABLE` and `SeoFields::OFF_LIMITS` (arrays of string). Provider method `seoAvailable(): bool`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 // tests/Feature/Seo/SeoGateTest.php
@@ -89,12 +89,12 @@ it('reports nothing available from the null bridge', function () {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=SeoGate`
 Expected: FAIL — `Class "TwillAi\Seo\SeoBridgeContract" not found`
 
-- [ ] **Step 3: Write the contract and whitelists**
+- [x] **Step 3: Write the contract and whitelists**
 
 ```php
 // src/Seo/SeoFields.php
@@ -178,7 +178,7 @@ final class NullSeoBridge implements SeoBridgeContract
 }
 ```
 
-- [ ] **Step 4: Add the gate to the provider**
+- [x] **Step 4: Add the gate to the provider**
 
 In `src/TwillAiServiceProvider.php`, add alongside `mcpAvailable()`:
 
@@ -215,7 +215,7 @@ protected function registerSeo(): void
 }
 ```
 
-- [ ] **Step 5: Add config**
+- [x] **Step 5: Add config**
 
 In `config/twill-ai.php`, after the `mcp` section:
 
@@ -238,12 +238,12 @@ In `config/twill-ai.php`, after the `mcp` section:
 ],
 ```
 
-- [ ] **Step 6: Run to verify it passes**
+- [x] **Step 6: Run to verify it passes**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=SeoGate`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/Seo config/twill-ai.php src/TwillAiServiceProvider.php tests/Feature/Seo/SeoGateTest.php
@@ -263,7 +263,7 @@ git commit -m "Add the SEO bridge contract and its gate"
 - Consumes: `SeoBridgeContract`, `SeoFields` from Task 1
 - Produces: `SeoBridge` implementing the contract against `TwillSeo\Services\PaperFactory` and `TwillSeo\Analysis\AnalysisRunner`
 
-- [ ] **Step 1: Add the dependency and fixture wiring**
+- [x] **Step 1: Add the dependency and fixture wiring**
 
 ```bash
 composer require --dev "yotech-ai/twill-cms-seo-suite:^1.0"
@@ -284,7 +284,7 @@ In `tests/TestCase.php`, inside `defineDatabaseMigrations()`, add to the paths a
 $vendor.'/yotech-ai/twill-cms-seo-suite/database/migrations',
 ```
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 ```php
 // tests/Feature/Seo/SeoBridgeTest.php
@@ -320,12 +320,12 @@ it('describes a saved entry with meta and a fresh report', function () {
 });
 ```
 
-- [ ] **Step 3: Run to verify it fails**
+- [x] **Step 3: Run to verify it fails**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=SeoBridge`
 Expected: FAIL — `Class "TwillAi\Seo\SeoBridge" not found`
 
-- [ ] **Step 4: Write the bridge**
+- [x] **Step 4: Write the bridge**
 
 ```php
 // src/Seo/SeoBridge.php
@@ -441,12 +441,12 @@ final class SeoBridge implements SeoBridgeContract
 }
 ```
 
-- [ ] **Step 5: Run to verify it passes**
+- [x] **Step 5: Run to verify it passes**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=SeoBridge`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Seo/SeoBridge.php composer.json composer.lock tests/
@@ -468,7 +468,7 @@ git commit -m "Add the SEO bridge over the Suite's PaperFactory and AnalysisRunn
 - Consumes: `SeoBridgeContract`, `ModuleRegistry`
 - Produces: tool named `get_seo`, arguments `module`, `id`, `locale?`
 
-- [ ] **Step 1: Write the fake bridge**
+- [x] **Step 1: Write the fake bridge**
 
 ```php
 // tests/Fixtures/FakeSeoBridge.php
@@ -519,7 +519,7 @@ final class FakeSeoBridge implements SeoBridgeContract
 }
 ```
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 ```php
 // tests/Feature/Seo/GetSeoToolTest.php
@@ -556,12 +556,12 @@ it('refuses a module the registry does not list', function () {
 });
 ```
 
-- [ ] **Step 3: Run to verify it fails**
+- [x] **Step 3: Run to verify it fails**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=GetSeoTool`
 Expected: FAIL — `Class "TwillAi\Tools\GetSeo" not found`
 
-- [ ] **Step 4: Write the tool**
+- [x] **Step 4: Write the tool**
 
 ```php
 // src/Tools/GetSeo.php
@@ -611,12 +611,12 @@ class GetSeo extends Tool
 }
 ```
 
-- [ ] **Step 5: Run to verify it passes**
+- [x] **Step 5: Run to verify it passes**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=GetSeoTool`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Tools/GetSeo.php tests/
@@ -635,7 +635,7 @@ git commit -m "Add the get_seo tool"
 - Consumes: `SeoBridgeContract`
 - Produces: tool `analyze_seo_text`, arguments `text`, `keyphrase`, `title?`, `description?`, `slug?`, `locale?`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 // tests/Feature/Seo/AnalyzeSeoTextToolTest.php
@@ -670,12 +670,12 @@ it('requires text and a keyphrase', function () {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=AnalyzeSeoTextTool`
 Expected: FAIL — class not found
 
-- [ ] **Step 3: Write the tool**
+- [x] **Step 3: Write the tool**
 
 ```php
 // src/Tools/AnalyzeSeoText.php
@@ -727,12 +727,12 @@ class AnalyzeSeoText extends Tool
 }
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=AnalyzeSeoTextTool`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Tools/AnalyzeSeoText.php tests/
@@ -751,7 +751,7 @@ git commit -m "Add the analyze_seo_text tool"
 - Consumes: `SeoBridgeContract`, `ModuleRegistry`, `SeoFields`
 - Produces: tool `update_seo`, arguments `module`, `id`, `locale`, `fields`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 // tests/Feature/Seo/UpdateSeoToolTest.php
@@ -811,12 +811,12 @@ it('refuses a field that is neither writable nor known', function () {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=UpdateSeoTool`
 Expected: FAIL — class not found
 
-- [ ] **Step 3: Write the tool**
+- [x] **Step 3: Write the tool**
 
 ```php
 // src/Tools/UpdateSeo.php
@@ -908,12 +908,12 @@ class UpdateSeo extends Tool
 }
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=UpdateSeoTool`
 Expected: PASS — including all five off-limits cases
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Tools/UpdateSeo.php tests/
@@ -932,7 +932,7 @@ git commit -m "Add the update_seo tool with an enforced field whitelist"
 - Consumes: `GetSeo`, `AnalyzeSeoText`, `UpdateSeo`, `SeoBridgeContract`
 - Produces: nothing new
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 // tests/Feature/Seo/SeoToolRegistrationTest.php
@@ -969,12 +969,12 @@ it('offers none of them when it is not', function () {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=SeoToolRegistration`
 Expected: FAIL — `get_seo` not in the list
 
-- [ ] **Step 3: Make the tool list conditional**
+- [x] **Step 3: Make the tool list conditional**
 
 Replace `TwillAssistant::tools()`:
 
@@ -1007,12 +1007,12 @@ public function tools(): iterable
 }
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=SeoToolRegistration`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Agents/TwillAssistant.php tests/
@@ -1034,7 +1034,7 @@ git commit -m "Offer the SEO tools on the admin chat when the Suite is present"
 - Consumes: `SeoBridgeContract`
 - Produces: `PublishedEditPolicy::allows(): bool`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 // tests/Feature/Seo/PublishedEditPolicyTest.php
@@ -1071,12 +1071,12 @@ it('refuses on null when it is not', function () {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=PublishedEditPolicy`
 Expected: FAIL — class not found
 
-- [ ] **Step 3: Write the policy**
+- [x] **Step 3: Write the policy**
 
 ```php
 // src/Seo/PublishedEditPolicy.php
@@ -1113,7 +1113,7 @@ final class PublishedEditPolicy
 }
 ```
 
-- [ ] **Step 4: Use it in UpdateContent**
+- [x] **Step 4: Use it in UpdateContent**
 
 Replace lines 61-65 of `src/Tools/UpdateContent.php`:
 
@@ -1125,7 +1125,7 @@ if ($entry->published && ! app(\TwillAi\Seo\PublishedEditPolicy::class)->allows(
 }
 ```
 
-- [ ] **Step 5: Change the config default**
+- [x] **Step 5: Change the config default**
 
 In `config/twill-ai.php`, replace the `allow_updating_published` line and extend its comment block:
 
@@ -1142,17 +1142,17 @@ In `config/twill-ai.php`, replace the `allow_updating_published` line and extend
 'allow_updating_published' => null,
 ```
 
-- [ ] **Step 6: Run to verify it passes**
+- [x] **Step 6: Run to verify it passes**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=PublishedEditPolicy`
 Expected: PASS — all four combinations
 
-- [ ] **Step 7: Run the whole suite for regressions**
+- [x] **Step 7: Run the whole suite for regressions**
 
 Run: `vendor/bin/pest.bat --no-coverage`
 Expected: PASS. `PayloadGuardsTest` and `ContentRoundTripTest` both assert the old refusal — they run without the Suite bound in `TestCase`, so `null` resolves to refuse and they keep passing.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/Seo/PublishedEditPolicy.php src/Tools/UpdateContent.php config/twill-ai.php tests/
@@ -1171,7 +1171,7 @@ git commit -m "Permit published edits when the SEO Suite is installed"
 - Consumes: `PublishedEditPolicy`
 - Produces: `was_published` (bool) and `warning` (string) keys on both tools' success payloads
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 // tests/Feature/Seo/LiveContentWarningTest.php
@@ -1215,12 +1215,12 @@ it('does not flag a draft edit', function () {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=LiveContentWarning`
 Expected: FAIL — no `was_published` key in the payload
 
-- [ ] **Step 3: Add the flag to both tools**
+- [x] **Step 3: Add the flag to both tools**
 
 In `src/Tools/UpdateContent.php`, capture the state before writing and add both keys to the success payload:
 
@@ -1237,12 +1237,12 @@ $wasPublished = (bool) $entry->published;
 
 Apply the identical pair in `src/Tools/UpdateSeo.php`, reading `$entry->published` before `updateMeta()`.
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=LiveContentWarning`
 Expected: PASS
 
-- [ ] **Step 5: Reinforce it in the prompt**
+- [x] **Step 5: Reinforce it in the prompt**
 
 In `src/Agents/TwillAssistant.php` instructions, add one line. The prompt is reinforcement — the tool result is the mechanism:
 
@@ -1250,7 +1250,7 @@ In `src/Agents/TwillAssistant.php` instructions, add one line. The prompt is rei
 When a tool result carries "was_published": true, you MUST tell the editor that you changed content that is live on the public site.
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Tools/UpdateContent.php src/Tools/UpdateSeo.php src/Agents/TwillAssistant.php tests/
@@ -1273,7 +1273,7 @@ git commit -m "Flag live-content edits in the tool result"
 - Consumes: the three `TwillAi\Tools` classes, `WrappedTwillAiTool`
 - Produces: three MCP tools; `TwillContentServer` exposing 8 or 11 tools depending on the gate
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Replace the count assertion in `tests/Feature/Mcp/TwillContentServerTest.php`. It currently reads the property's *default* via `ReflectionProperty::getDefaultValue()`, which cannot see a constructor-assigned list — so it must instantiate the server:
 
@@ -1318,12 +1318,12 @@ it('exposes no tool that can publish or delete, in either state', function () {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=TwillContentServer`
 Expected: FAIL — SEO tool names missing
 
-- [ ] **Step 3: Write the three wrappers**
+- [x] **Step 3: Write the three wrappers**
 
 Each is one line of real content, matching the existing wrappers:
 
@@ -1342,7 +1342,7 @@ class GetSeo extends WrappedTwillAiTool
 
 Repeat for `AnalyzeSeoText` and `UpdateSeo`, delegating to `\TwillAi\Tools\AnalyzeSeoText::class` and `\TwillAi\Tools\UpdateSeo::class`.
 
-- [ ] **Step 4: Make the server's tool list conditional**
+- [x] **Step 4: Make the server's tool list conditional**
 
 In `TwillContentServer`'s constructor — which already assigns `$this->instructions` — append after that line:
 
@@ -1358,12 +1358,12 @@ if (app(\TwillAi\Seo\SeoBridgeContract::class)->available()) {
 }
 ```
 
-- [ ] **Step 5: Run to verify it passes**
+- [x] **Step 5: Run to verify it passes**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=TwillContentServer`
 Expected: PASS
 
-- [ ] **Step 6: Correct the tester-facing document**
+- [x] **Step 6: Correct the tester-facing document**
 
 `docs/test-plan.md` Test 1.4 currently says **eight** tools and tells testers *"Nine or more is a genuine concern"*. Left alone a tester correctly escalates a non-bug. Replace the expectation and the warning:
 
@@ -1379,7 +1379,7 @@ update_seo.
 > did not intend to expose. Tell a developer.
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/Mcp tests/ docs/test-plan.md
@@ -1400,7 +1400,7 @@ git commit -m "Expose the SEO tools over MCP and correct the tool-count contract
 - Consumes: `SeoBridgeContract`
 - Produces: `describe()['seo']` = `['available' => bool]`; `PromptComposer::seoGuidance(): string`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 // tests/Feature/Seo/SeoPromptAndRegistryTest.php
@@ -1432,12 +1432,12 @@ it('adds SEO guidance to the prompt only when available', function () {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=SeoPromptAndRegistry`
 Expected: FAIL — undefined key `seo` / undefined method `seoGuidance`
 
-- [ ] **Step 3: Add the registry key**
+- [x] **Step 3: Add the registry key**
 
 In `ModuleRegistry::describe()`, before `'notes' =>`:
 
@@ -1449,7 +1449,7 @@ In `ModuleRegistry::describe()`, before `'notes' =>`:
 ]] : []),
 ```
 
-- [ ] **Step 4: Add the prompt fragment**
+- [x] **Step 4: Add the prompt fragment**
 
 In `PromptComposer`:
 
@@ -1479,12 +1479,12 @@ public function seoGuidance(): string
 
 Add `use TwillAi\Seo\SeoBridgeContract;` to its imports, and append `seoGuidance()` to the assistant's instructions in `TwillAssistant`.
 
-- [ ] **Step 5: Run to verify it passes**
+- [x] **Step 5: Run to verify it passes**
 
 Run: `vendor/bin/pest.bat --no-coverage --filter=SeoPromptAndRegistry`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Services tests/ src/Agents/TwillAssistant.php
@@ -1503,7 +1503,7 @@ git commit -m "Report SEO availability in the registry and the prompt"
 - Consumes: everything above
 - Produces: a CI job proving the package works with the Suite absent
 
-- [ ] **Step 1: Add the Seo testsuite**
+- [x] **Step 1: Add the Seo testsuite**
 
 `phpunit.xml` suites must stay non-overlapping — PHPUnit warns when a file belongs to two, and `failOnWarning` turns that into a failed run:
 
@@ -1513,7 +1513,7 @@ git commit -m "Report SEO availability in the registry and the prompt"
 </testsuite>
 ```
 
-- [ ] **Step 2: Add the no-Suite CI job**
+- [x] **Step 2: Add the no-Suite CI job**
 
 In `.github/workflows/tests.yml`, mirroring the existing no-connector job:
 
@@ -1541,7 +1541,7 @@ In `.github/workflows/tests.yml`, mirroring the existing no-connector job:
         run: vendor/bin/pest --no-coverage --testsuite=Package,TwillAi,Mcp
 ```
 
-- [ ] **Step 3: Document it in the README**
+- [x] **Step 3: Document it in the README**
 
 Add after the Plugins page section:
 
@@ -1557,7 +1557,7 @@ Installing the Suite does change one default: `allow_updating_published` ships a
 Turn the integration off entirely with `TWILL_AI_SEO_ENABLED=false`.
 ```
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 
 ```bash
 vendor/bin/pint.bat
@@ -1566,7 +1566,7 @@ vendor/bin/pest.bat --no-coverage
 
 Expected: all green, exit 0.
 
-- [ ] **Step 5: Verify the no-Suite path locally**
+- [x] **Step 5: Verify the no-Suite path locally**
 
 Prove the gate before trusting CI, in a throwaway clone so the working tree keeps its dependencies:
 
@@ -1579,7 +1579,7 @@ vendor/bin/pest --no-coverage --testsuite=Package,TwillAi,Mcp
 
 Expected: green, with no SEO tools registered anywhere.
 
-- [ ] **Step 6: Commit and open the PR**
+- [x] **Step 6: Commit and open the PR**
 
 ```bash
 git add .github README.md phpunit.xml docs/

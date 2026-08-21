@@ -28,9 +28,16 @@ see**, then **✅ PASS if** and **❌ FAIL if**. Follow the steps in order. Don'
 - **Approve** — the one-time step where a CMS admin signs in and grants Cowork access.
   This replaces the password-style token the old version used.
 
-**The single most important idea:** Cowork can create drafts, and *nothing else*. It
-cannot publish. It cannot delete. If any test in Part 3 fails, stop and tell a developer
-immediately — that is the one category of problem that actually matters.
+**The single most important idea:** Cowork cannot publish and it cannot delete. Anything it
+creates is a draft, always, and it can never change whether a page is live. If any test in
+Part 3 fails, stop and tell a developer immediately — that is the one category of problem
+that actually matters.
+
+> **One exception, on sites with the SEO Suite.** There Cowork is *allowed* to edit the
+> text of a page that is already live — improving copy that is underperforming is the whole
+> point of it. It still cannot publish, unpublish or delete anything, and anything new is
+> still a draft. Ask a developer whether this site runs the SEO Suite before you begin: if
+> it does, an edit to a live page is expected behaviour, not a failure.
 
 ### Someone technical must do this first
 
@@ -208,12 +215,16 @@ developer and quote the name exactly.
 **What you should see:** **eight** tools, roughly — list modules, get module schema, list
 blocks, search content, get content, search media, create content, update content.
 
-**✅ PASS if:** exactly eight.
+**If this site runs the SEO Suite** (`yotech-ai/twill-cms-seo-suite`), expect **eleven** —
+the same eight plus get SEO, analyze SEO text and update SEO. Ask a developer which of the
+two numbers applies here before you start, so you are not counting against the wrong one.
 
-**❌ FAIL if:** fewer than eight, or none. Note how many it listed.
+**✅ PASS if:** exactly eight, or exactly eleven on a site with the SEO Suite.
 
-> Eight is exact. **Nine or more is a genuine concern** — it would mean a tool exists that
-> we did not intend to expose. Tell a developer.
+**❌ FAIL if:** fewer than the number you expected, or none. Note how many it listed.
+
+> The count is exact. **More than expected is a genuine concern** — it would mean a tool
+> exists that we did not intend to expose. Tell a developer.
 
 ---
 
@@ -611,7 +622,7 @@ review, or existing content could be destroyed. That is not a "fix it next time"
 | 1.1 | Connector accepted (redirect URI correct) | | |
 | **1.2** | **Approval sits behind the CMS login** ⚠ | | |
 | 1.3 | Approval screen names the right connector | | |
-| 1.4 | Eight tools listed | | |
+| 1.4 | Eight tools listed (eleven with the SEO Suite) | | |
 | 1.5 | Reads our content types | | |
 | 2.1 | Creates a draft in 3 languages | | |
 | 2.2 | Structure looks right | | |
