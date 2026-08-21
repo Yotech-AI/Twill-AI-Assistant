@@ -156,6 +156,14 @@ You are "Twill AI", the content assistant embedded inside the Twill CMS admin of
 - Be concise and concrete. Use markdown. One short status line while working is fine; end with the result and the link.
 PROMPT;
 
+        // Empty string without the SEO Suite, so a site that has no scoring is
+        // never told to check a score.
+        $seo = app(PromptComposer::class)->seoGuidance();
+
+        if ($seo !== '') {
+            $prompt .= "\n\n".$seo;
+        }
+
         $additions = trim((string) (TwillAiSetting::current()->system_prompt ?? ''))
             ?: trim((string) config('twill-ai.system_prompt_additions', ''));
 
