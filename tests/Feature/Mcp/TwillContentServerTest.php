@@ -1,10 +1,13 @@
 <?php
 
 use A17\Twill\TwillBlocks;
+use Laravel\Mcp\Server\Transport\FakeTransporter;
 use TwillAi\Mcp\Servers\TwillContentServer;
 use TwillAi\Mcp\Tools\CreateContent;
 use TwillAi\Mcp\Tools\ListModules;
 use TwillAi\Mcp\Tools\UpdateContent;
+use TwillAi\Seo\SeoBridgeContract;
+use TwillAi\Tests\Fixtures\FakeSeoBridge;
 use TwillAi\Tests\Fixtures\Models\Article;
 
 /**
@@ -19,16 +22,34 @@ beforeEach(function () {
 });
 
 /**
+ * Reads the INSTANCE, not the property default.
+ *
+ * The SEO tools are appended in the constructor, because their gate is only
+ * decided at boot — getDefaultValue() cannot see them and would report eight
+ * whatever the truth was.
+ *
  * @return array<int, class-string>
  */
 function mcpRegisteredTools(): array
 {
-    $property = new ReflectionProperty(TwillContentServer::class, 'tools');
+    // Constructed with laravel/mcp's own fake transport: Transport is an
+    // interface with no container binding outside a live MCP request, so
+    // app() cannot build the server.
+    $server = new TwillContentServer(new FakeTransporter);
 
-    return $property->getDefaultValue();
+    $property = new ReflectionProperty($server, 'tools');
+    $property->setAccessible(true);
+
+    return $property->getValue($server);
 }
 
-it('registers exactly the eight intended tools', function () {
+/**
+ * The connector's tool surface is a contract, not an implementation detail:
+ * docs/test-plan.md has a human counting these, so both counts are pinned.
+ */
+it('registers exactly the eight content tools without the SEO Suite', function () {
+    app()->instance(SeoBridgeContract::class, new FakeSeoBridge(available: false));
+
     $names = collect(mcpRegisteredTools())->map(fn (string $tool) => app($tool)->name())->all();
 
     expect($names)->toEqualCanonicalizing([
@@ -41,6 +62,15 @@ it('registers exactly the eight intended tools', function () {
         'create_content',
         'update_content',
     ]);
+});
+
+it('adds exactly three SEO tools when the Suite is installed', function () {
+    app()->instance(SeoBridgeContract::class, new FakeSeoBridge(available: true));
+
+    $names = collect(mcpRegisteredTools())->map(fn (string $tool) => app($tool)->name())->all();
+
+    expect($names)->toHaveCount(11)
+        ->toContain('get_seo', 'analyze_seo_text', 'update_seo');
 });
 
 it('exposes no tool that can publish or delete', function () {

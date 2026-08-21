@@ -4,14 +4,18 @@ namespace TwillAi\Mcp\Servers;
 
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Contracts\Transport;
+use TwillAi\Mcp\Tools\AnalyzeSeoText;
 use TwillAi\Mcp\Tools\CreateContent;
 use TwillAi\Mcp\Tools\GetContent;
 use TwillAi\Mcp\Tools\GetModuleSchema;
+use TwillAi\Mcp\Tools\GetSeo;
 use TwillAi\Mcp\Tools\ListBlocks;
 use TwillAi\Mcp\Tools\ListModules;
 use TwillAi\Mcp\Tools\SearchContent;
 use TwillAi\Mcp\Tools\SearchMedia;
 use TwillAi\Mcp\Tools\UpdateContent;
+use TwillAi\Mcp\Tools\UpdateSeo;
+use TwillAi\Seo\SeoBridgeContract;
 use TwillAi\Services\PromptComposer;
 
 /**
@@ -60,5 +64,16 @@ class TwillContentServer extends Server
         parent::__construct($transport);
 
         $this->instructions = app(PromptComposer::class)->mcpInstructions();
+
+        // Appended here rather than in the property default, because the SEO
+        // gate is only decided at boot. A connector on a site without the Suite
+        // sees exactly the eight content tools.
+        if (app(SeoBridgeContract::class)->available()) {
+            $this->tools = array_merge($this->tools, [
+                GetSeo::class,
+                AnalyzeSeoText::class,
+                UpdateSeo::class,
+            ]);
+        }
     }
 }
