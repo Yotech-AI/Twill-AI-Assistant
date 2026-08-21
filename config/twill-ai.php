@@ -143,7 +143,8 @@ return [
     | The agent can never publish and can never delete — those are product
     | guarantees enforced in code, not settings. The switch below only controls
     | whether it may UPDATE entries a human already published (it still cannot
-    | change their publish state). Default: drafts only.
+    | change their publish state), and what it defaults to depends on whether the
+    | SEO Suite is installed — see below.
     |
     */
 
