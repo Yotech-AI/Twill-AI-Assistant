@@ -73,7 +73,36 @@ jobs:
           composer update --prefer-dist --no-interaction --no-progress
 
       - name: Run every suite except the connector
-        run: vendor/bin/pest --no-coverage --testsuite=Package,TwillAi
+        run: vendor/bin/pest --no-coverage --testsuite=Package,TwillAi,Seo
+
+  # The mirror image: a host that runs the SEO Suite but never installed the
+  # connector is the common shape, so the two optional dependencies are proven
+  # to compose rather than only to work one at a time.
+  test-without-seo:
+    runs-on: ubuntu-latest
+    name: PHP 8.4 / Laravel 13 / no SEO Suite
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, gd, openssl, sqlite3, pdo_sqlite, zip
+          coverage: none
+
+      - name: Install dependencies without the SEO Suite
+        run: |
+          composer remove --no-update --no-interaction --dev yotech-ai/twill-cms-seo-suite
+          composer update --prefer-dist --no-interaction --no-progress
+
+      # Every suite except Seo, which tests the bridge against the real Suite.
+      # The SEO tool COUNTS still run here, in Mcp and TwillAi, driven by the
+      # fake bridge -- so "adds exactly three tools" is asserted on a machine
+      # where the Suite does not exist.
+      - name: Run every suite except SEO
+        run: vendor/bin/pest --no-coverage --testsuite=Package,TwillAi,Mcp
 
   pint:
     runs-on: ubuntu-latest

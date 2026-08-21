@@ -8,9 +8,19 @@ import { toolLabel } from '../api';
 const props = defineProps({
     mode: { type: String, default: 'page' },
     activeChatId: { type: Number, default: null },
+    chats: { type: Array, default: () => [] },
+    expanded: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['chat-created', 'stream-finished', 'end-chat', 'collapse']);
+const emit = defineEmits([
+    'chat-created',
+    'stream-finished',
+    'end-chat',
+    'collapse',
+    'select-chat',
+    'new-chat',
+    'toggle-expand',
+]);
 
 const api = inject('api');
 const config = inject('config');
@@ -51,6 +61,49 @@ let mentionFetchTimer = null;
 let mentionRange = null;
 
 const isWidget = computed(() => props.mode === 'widget');
+
+/* ---------- History dropdown ----------
+   In the collapsed drawer the title doubles as the history control. The
+   fullscreen state has a real sidebar, so the dropdown is redundant there. */
+
+const historyOpen = ref(false);
+
+const activeChatTitle = computed(() => {
+    const active = props.chats.find((chat) => chat.id === props.activeChatId);
+
+    return active?.title || config.title;
+});
+
+function toggleHistory() {
+    historyOpen.value = !historyOpen.value;
+}
+
+function chooseChat(id) {
+    historyOpen.value = false;
+    emit('select-chat', id);
+}
+
+function startNewChat() {
+    historyOpen.value = false;
+    emit('new-chat');
+}
+
+// Dismiss on any click outside the dropdown, and on Escape — a menu you can
+// only close by hitting the same button is a trap on a panel this small.
+function closeHistoryOnOutsideClick(event) {
+    if (! event.target.closest?.('.tai-history')) historyOpen.value = false;
+}
+
+function closeHistoryOnEscape(event) {
+    if (event.key === 'Escape') historyOpen.value = false;
+}
+
+watch(historyOpen, (open) => {
+    const method = open ? 'addEventListener' : 'removeEventListener';
+
+    document[method]('click', closeHistoryOnOutsideClick);
+    document[method]('keydown', closeHistoryOnEscape);
+});
 const uploadConfig = computed(() => config.uploads || { max_files: 5, extensions: [] });
 const acceptAttr = computed(() => (uploadConfig.value.extensions || []).map((ext) => `.${ext}`).join(','));
 const uploading = computed(() => files.value.some((file) => file.uploading));
@@ -642,21 +695,80 @@ watch(() => props.activeChatId, (id, previous) => {
 onBeforeUnmount(() => {
     stopPolling();
     if (mentionFetchTimer) clearTimeout(mentionFetchTimer);
+
+    // The watch above only removes these when the dropdown closes, so a panel
+    // unmounted while it is open would leave them bound to a dead component.
+    document.removeEventListener('click', closeHistoryOnOutsideClick);
+    document.removeEventListener('keydown', closeHistoryOnEscape);
 });
 </script>
 
 <template>
     <section class="tai-panel" :class="{ 'tai-panel--widget': isWidget }">
         <header class="tai-panel__header">
-            <div class="tai-panel__brand">
+            <!-- The title is the history control in the collapsed drawer. In
+                 fullscreen the sidebar owns history, so it is plain text. -->
+            <div v-if="isWidget && ! expanded" class="tai-history">
+                <button
+                    type="button"
+                    class="tai-history__trigger"
+                    :aria-expanded="historyOpen"
+                    aria-haspopup="menu"
+                    title="Recent chats"
+                    @click="toggleHistory"
+                >
+                    <Icon name="sparkles" :size="16" class="tai-panel__spark" />
+                    <span class="tai-history__title">{{ activeChatTitle }}</span>
+                    <Icon name="chevron-down" :size="13" class="tai-history__caret" />
+                </button>
+
+                <div v-if="historyOpen" class="tai-history__menu" role="menu">
+                    <button type="button" class="tai-history__item tai-history__item--new" @click="startNewChat">
+                        <Icon name="plus" :size="14" /> New chat
+                    </button>
+
+                    <p v-if="! chats.length" class="tai-history__empty">No earlier chats yet.</p>
+
+                    <button
+                        v-for="chat in chats.slice(0, 10)"
+                        :key="chat.id"
+                        type="button"
+                        class="tai-history__item"
+                        :class="{ 'tai-history__item--active': chat.id === activeChatId }"
+                        role="menuitem"
+                        @click="chooseChat(chat.id)"
+                    >{{ chat.title }}</button>
+
+                    <a class="tai-history__item tai-history__item--all" :href="config.urls.page">
+                        All chats <Icon name="external" :size="12" />
+                    </a>
+                </div>
+            </div>
+
+            <div v-else class="tai-panel__brand">
                 <Icon name="sparkles" :size="16" class="tai-panel__spark" />
                 <strong>{{ config.title }}</strong>
             </div>
 
             <div class="tai-panel__actions">
-                <a v-if="isWidget" class="tai-icon-button" :href="config.urls.page" title="Open history"><Icon name="clock" :size="15" /></a>
+                <!-- New chat replaces the old "End" button: same outcome, and a
+                     name that says what you get rather than what you lose. -->
                 <button
-                    v-if="messages.length"
+                    v-if="isWidget"
+                    type="button"
+                    class="tai-icon-button"
+                    title="New chat"
+                    @click="startNewChat"
+                ><Icon name="plus" :size="15" /></button>
+                <button
+                    v-if="isWidget"
+                    type="button"
+                    class="tai-icon-button"
+                    :title="expanded ? 'Exit full screen' : 'Full screen'"
+                    @click="$emit('toggle-expand')"
+                ><Icon :name="expanded ? 'collapse' : 'expand'" :size="15" /></button>
+                <button
+                    v-if="! isWidget && messages.length"
                     type="button"
                     class="tai-icon-button"
                     title="End chat (history is kept on the Twill AI page)"
@@ -666,9 +778,9 @@ onBeforeUnmount(() => {
                     v-if="isWidget"
                     type="button"
                     class="tai-icon-button"
-                    title="Minimize"
+                    title="Close"
                     @click="$emit('collapse')"
-                ><Icon name="minus" :size="15" /></button>
+                ><Icon name="close" :size="15" /></button>
             </div>
         </header>
 

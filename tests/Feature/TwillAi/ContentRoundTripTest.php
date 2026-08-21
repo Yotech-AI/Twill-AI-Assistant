@@ -260,7 +260,18 @@ it('rejects browsers the registry does not list', function () {
     ]);
 })->throws(TwillAiException::class, 'Unknown browser "unrelated_things"');
 
-it('refuses updating published entries through the tool by default', function () {
+/**
+ * Pins the refusal itself, with the flag set explicitly.
+ *
+ * It used to rely on the shipped default, which was `false`. That default is now
+ * `null` — "permitted only when the SEO Suite is installed" — and this harness
+ * has the Suite, so relying on the default made this test assert the opposite of
+ * what it was named for. What the default resolves to in each configuration is
+ * covered by PublishedEditPolicyTest; this one is about the guard working.
+ */
+it('refuses updating published entries when the host has said false', function () {
+    config()->set('twill-ai.allow_updating_published', false);
+
     $article = twillAiCreateArticle();
     $article->forceFill(['published' => true])->save();
 

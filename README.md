@@ -103,7 +103,7 @@ These are enforced in `PayloadBuilder` and the tool list, not in config, and no 
 - **Registry-bound.** Only registered modules, and only the operations listed for each.
 - **Field whitelist.** Non-translated columns not in `extra_fields` are stripped from agent payloads.
 
-`allow_updating_published` (default `false`) only controls whether the agent may edit an entry a human already published; it still cannot alter its publish state.
+`allow_updating_published` only controls whether the agent may edit an entry a human already published; it still cannot alter its publish state. It ships as `null` — see [SEO Suite integration](#seo-suite-integration-optional) — and `false` pins it closed.
 
 ## The Plugins page
 
@@ -111,12 +111,43 @@ This package adds a **Plugins** entry to the admin navigation, next to the Media
 
 The page is created by whichever Yotech plugin loads first; the rest just add themselves to it. That coordination happens through two container keys — `yotech.twill-plugins.registry` and `yotech.twill-plugins.page-owner` — which carry only PHP built-ins, so each plugin ships its own copy of the code under its own namespace and they still interoperate. Install one Yotech plugin or five: you get exactly one Plugins page, and no plugin depends on any other.
 
+
+## SEO Suite integration (optional)
+
+With [`yotech-ai/twill-cms-seo-suite`](https://packagist.org/packages/yotech-ai/twill-cms-seo-suite) installed, the assistant gains three tools on both surfaces — the admin chat and the MCP connector:
+
+| Tool | Does |
+|---|---|
+| `get_seo` | Reads an entry's current metadata, its score, and the assessments explaining that score. |
+| `analyze_seo_text` | Scores proposed copy **without saving anything**, so a rewrite can be checked before it is written. |
+| `update_seo` | Writes the metadata, through the Suite's own writer, and refreshes its score and sitemap caches. |
+
+Nothing to configure: the integration turns itself on when the Suite is present. `TWILL_AI_SEO_ENABLED=false` turns it off again, and on a site without the Suite none of it exists — no tools, no registry key, and no SEO wording in the prompt.
+
+### What it will not touch
+
+`update_seo` writes seven fields — `seo_title`, `seo_description`, `focus_keyphrase`, `og_title`, `og_description`, `twitter_title`, `twitter_description`.
+
+The indexing controls are refused in code, not by config: `robots_noindex`, `robots_nofollow`, `canonical_url`, `cornerstone` and `schema_type_override`. Deindexing a page or reassigning its canonical is quietly destructive in the same way publishing and deleting are, and this package's rule is that the agent never does the destructive thing.
+
+### Editing published entries
+
+Installing the Suite changes one default. `allow_updating_published` ships as `null`, meaning *follow the Suite*: with it installed the agent may edit entries a human already published, without it the answer stays no.
+
+| `allow_updating_published` | Effect |
+|---|---|
+| `null` (default) | Published entries editable **only** when the SEO Suite is installed. |
+| `true` | Always editable. |
+| `false` | Never; drafts only, whatever else is installed. |
+
+Two things hold regardless. The agent still cannot change any entry's publish state, and **new content is always a draft** — the loosened rule is about improving live copy, never about putting new copy live. And every edit to a published entry comes back with `was_published: true` and a warning that the agent is instructed to relay, so a live change is never silent.
+
 ## Commands
 
 | Command | Purpose |
 |---|---|
 | `twill-ai:install` | Publish the config and report the remaining setup steps. |
-| `twill-ai:doctor` | Diagnose block registration, host wiring, queue and MCP setup. |
+| `twill-ai:doctor` | Diagnose block registration, host wiring, the API key, queue, SEO and MCP setup. |
 | `twill-ai:refresh-models` | Refresh the provider's model list for the picker. |
 | `mcp:client-create` / `mcp:client-list` / `mcp:client-revoke` | Manage MCP connectors. |
 | `mcp:doctor` | Diagnose the MCP endpoint, its tools and its clients. |

@@ -5,6 +5,7 @@ import Icon from './Icon.vue';
 const props = defineProps({
     chats: { type: Array, default: () => [] },
     activeChatId: { type: Number, default: null },
+    settingsUrl: { type: String, default: '' },
 });
 
 defineEmits(['select', 'new-chat', 'rename', 'delete']);
@@ -59,5 +60,12 @@ function formatDate(value) {
                 </span>
             </li>
         </ul>
+
+        <!-- Rendered only when a URL is supplied, so the full page — which
+             reaches Settings through its own sub-nav — does not grow a second
+             way to get there. -->
+        <a v-if="settingsUrl" class="tai-sidebar__settings" :href="settingsUrl">
+            <Icon name="settings" :size="15" /> Settings
+        </a>
     </aside>
 </template>

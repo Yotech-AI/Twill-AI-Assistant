@@ -13,16 +13,20 @@ use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Promptable;
 use TwillAi\Models\Chat;
 use TwillAi\Models\TwillAiSetting;
+use TwillAi\Seo\SeoBridgeContract;
 use TwillAi\Services\ModuleRegistry;
 use TwillAi\Services\PromptComposer;
+use TwillAi\Tools\AnalyzeSeoText;
 use TwillAi\Tools\CreateContent;
 use TwillAi\Tools\GetContent;
 use TwillAi\Tools\GetModuleSchema;
+use TwillAi\Tools\GetSeo;
 use TwillAi\Tools\ListBlocks;
 use TwillAi\Tools\ListModules;
 use TwillAi\Tools\SearchContent;
 use TwillAi\Tools\SearchMedia;
 use TwillAi\Tools\UpdateContent;
+use TwillAi\Tools\UpdateSeo;
 use TwillAi\Tools\UseAttachmentAsMedia;
 
 /**
@@ -152,6 +156,14 @@ You are "Twill AI", the content assistant embedded inside the Twill CMS admin of
 - Be concise and concrete. Use markdown. One short status line while working is fine; end with the result and the link.
 PROMPT;
 
+        // Empty string without the SEO Suite, so a site that has no scoring is
+        // never told to check a score.
+        $seo = app(PromptComposer::class)->seoGuidance();
+
+        if ($seo !== '') {
+            $prompt .= "\n\n".$seo;
+        }
+
         $additions = trim((string) (TwillAiSetting::current()->system_prompt ?? ''))
             ?: trim((string) config('twill-ai.system_prompt_additions', ''));
 
@@ -163,7 +175,7 @@ PROMPT;
      */
     public function tools(): iterable
     {
-        return [
+        $tools = [
             app(ListModules::class),
             app(GetModuleSchema::class),
             app(ListBlocks::class),
@@ -175,5 +187,16 @@ PROMPT;
             app(UpdateContent::class),
             // NOTE: deliberately no delete tool. Do not add one.
         ];
+
+        // Present only when the SEO Suite is installed and enabled. Asked of the
+        // bridge rather than re-reading config, so registration and behaviour
+        // can never disagree about whether SEO exists.
+        if (app(SeoBridgeContract::class)->available()) {
+            $tools[] = app(GetSeo::class);
+            $tools[] = app(AnalyzeSeoText::class);
+            $tools[] = app(UpdateSeo::class);
+        }
+
+        return $tools;
     }
 }

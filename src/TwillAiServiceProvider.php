@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Laravel\Mcp\Server;
 use TwillAi\PluginPage\TwillPluginServiceProvider;
+use TwillSeo\Analysis\AnalysisRunner;
+use TwillSeo\Services\ModelRegistry;
+use TwillSeo\Services\PaperFactory;
 
 /**
  * Drop-in service provider for the Twill AI assistant.
@@ -81,6 +84,7 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
         $this->registerNavigation();
         $this->registerFloatingWidget();
         $this->registerMcp();
+        $this->registerSeo();
     }
 
     /**
@@ -299,5 +303,39 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
     {
         return (bool) config('twill-ai.mcp.enabled', false)
             && class_exists(Server::class);
+    }
+
+    /**
+     * Bind the SEO bridge, real or null.
+     *
+     * Resolved in boot() with the gate evaluated once, for the reason the MCP
+     * guard had to be fixed: a gate read in two lifecycle phases can disagree
+     * with itself, and the failure mode is tools registered against services
+     * that were never bound.
+     */
+    protected function registerSeo(): void
+    {
+        $this->app->singleton(
+            Seo\SeoBridgeContract::class,
+            fn (): Seo\SeoBridgeContract => $this->seoAvailable()
+                ? new Seo\SeoBridge(
+                    $this->app->make(PaperFactory::class),
+                    $this->app->make(AnalysisRunner::class),
+                    $this->app->make(ModelRegistry::class),
+                )
+                : new Seo\NullSeoBridge
+        );
+    }
+
+    /**
+     * Defaults to true, unlike mcp.enabled. The connector opens a network
+     * surface and must be chosen deliberately; SEO is inert unless the Suite is
+     * installed, so class_exists is a sufficient guard and a host that installed
+     * the Suite plainly wants it used.
+     */
+    protected function seoAvailable(): bool
+    {
+        return (bool) config('twill-ai.seo.enabled', true)
+            && class_exists(AnalysisRunner::class);
     }
 }

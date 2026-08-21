@@ -3,6 +3,7 @@
 namespace TwillAi\Services;
 
 use Throwable;
+use TwillAi\Seo\SeoBridgeContract;
 
 /**
  * Builds the prompt fragments that would otherwise hard-code one site's content
@@ -260,6 +261,35 @@ class PromptComposer
         }
 
         return $roles === [] ? null : sprintf('{"%s": [55]}', $roles[0]);
+    }
+
+    /**
+     * How to use the SEO tools, when they exist.
+     *
+     * Returns an empty string without the Suite, so nothing SEO-related ever
+     * reaches the prompt on a site that does not have it — a site with no
+     * scoring being told to "check the score first" would just fail.
+     */
+    public function seoGuidance(): string
+    {
+        if (! app(SeoBridgeContract::class)->available()) {
+            return '';
+        }
+
+        $generated = <<<'DESC'
+        # SEO
+        This site has SEO analysis. To improve existing copy: call get_seo to read the current
+        score and the failing assessments, draft a rewrite, check it with analyze_seo_text
+        BEFORE saving, then write it with update_content and set the metadata with update_seo.
+        On a published page always check with analyze_seo_text first — never save repeatedly to
+        a live page to watch the score move.
+        You cannot set indexing controls (robots_noindex, robots_nofollow), canonical URLs,
+        cornerstone or schema overrides. If asked, explain those are human decisions.
+        When a tool result carries "was_published": true you MUST tell the editor that you
+        changed content which is live on the public site.
+        DESC;
+
+        return $this->resolve('seo', $generated);
     }
 
     /**

@@ -7,6 +7,7 @@ use A17\Twill\Repositories\ModuleRepository;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use TwillAi\Exceptions\TwillAiException;
+use TwillAi\Seo\SeoBridgeContract;
 
 /**
  * The single source of truth for which Twill modules the AI agent can see
@@ -189,6 +190,12 @@ class ModuleRegistry
                 'editor' => $editor,
                 'allowed_blocks' => $blocks,
             ])->values()->all(),
+            // Present only when the SEO Suite is installed. A module whose model
+            // lacks HasSeo has no SEO surface at all, and the tools must be able
+            // to say so rather than failing obscurely inside the Suite.
+            ...(app(SeoBridgeContract::class)->available()
+                ? ['seo' => ['available' => method_exists($model, 'seoEntry')]]
+                : []),
             'notes' => 'Content is always saved as a DRAFT. Publishing and deleting are human-only actions.',
         ];
     }

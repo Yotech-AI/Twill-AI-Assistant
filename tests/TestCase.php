@@ -11,6 +11,8 @@ use Laravel\Passport\PassportServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use TwillAi\Tests\Fixtures\FixtureServiceProvider;
 use TwillAi\TwillAiServiceProvider;
+use TwillSeo\Services\ModelRegistry;
+use TwillSeo\TwillSeoServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -58,6 +60,10 @@ abstract class TestCase extends Orchestra
             PassportServiceProvider::class,
             AiServiceProvider::class,
             McpServiceProvider::class,
+            // The SEO Suite binds the contracts PaperFactory depends on, so its
+            // provider has to run for the bridge to resolve. Optional like the
+            // rest — CI has a job that removes the Suite entirely.
+            TwillSeoServiceProvider::class,
             FixtureServiceProvider::class,
             TwillAiServiceProvider::class,
         ], static fn (string $provider): bool => class_exists($provider)));
@@ -83,6 +89,7 @@ abstract class TestCase extends Orchestra
             $vendor.'/area17/twill/migrations/default',
             $vendor.'/laravel/passport/database/migrations',
             $vendor.'/laravel/ai/database/migrations',
+            $vendor.'/yotech-ai/twill-cms-seo-suite/database/migrations',
             __DIR__.'/../database/migrations',
             __DIR__.'/Fixtures/migrations',
         ] as $path) {
@@ -128,6 +135,22 @@ abstract class TestCase extends Orchestra
         // just because there is only one to write.
         $config->set('translatable.locales', ['en', 'nl']);
         $config->set('twill.locale', 'en');
+
+        // twill-ai.modules and twill-seo.models are SEPARATE lists, and a host
+        // registers its models with both. Registered here the same way, so the
+        // bridge is exercised against a realistic setup rather than one where
+        // the Suite has never heard of the model.
+        if (class_exists(ModelRegistry::class)) {
+            $config->set('twill-seo.models', [
+                'seoArticles' => [
+                    'model' => Fixtures\Models\SeoArticle::class,
+                    // The Suite's default resolver renders blocks through Twill
+                    // capsules, and the fixture CMS registers none. The registry's
+                    // `content` key is the documented way past that.
+                    'content' => Fixtures\FixtureContentResolver::class,
+                ],
+            ]);
+        }
     }
 
     /**

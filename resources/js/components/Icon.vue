@@ -1,10 +1,14 @@
 <script setup>
 import { computed } from 'vue';
 import {
+    ArrowsPointingInIcon,
+    ArrowsPointingOutIcon,
     ArrowTopRightOnSquareIcon,
     ArrowUpTrayIcon,
     CheckIcon,
+    ChevronDownIcon,
     ClockIcon,
+    Cog6ToothIcon,
     DocumentIcon,
     ExclamationTriangleIcon,
     FolderIcon,
@@ -39,6 +43,10 @@ const ICONS = {
     rename: PencilSquareIcon,
     warning: ExclamationTriangleIcon,
     external: ArrowTopRightOnSquareIcon,
+    expand: ArrowsPointingOutIcon,
+    collapse: ArrowsPointingInIcon,
+    'chevron-down': ChevronDownIcon,
+    settings: Cog6ToothIcon,
 };
 
 const icon = computed(() => ICONS[props.name] || null);

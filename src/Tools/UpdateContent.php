@@ -9,6 +9,7 @@ use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
 use Stringable;
 use TwillAi\Exceptions\TwillAiException;
+use TwillAi\Seo\PublishedEditPolicy;
 use TwillAi\Services\ModuleRegistry;
 use TwillAi\Services\PayloadBuilder;
 use TwillAi\Tools\Concerns\HandlesToolErrors;
@@ -58,7 +59,12 @@ DESC;
                 $entry = $model->newQuery()->findOrFail((int) $request['id']);
             }
 
-            if ($entry->published && ! config('twill-ai.allow_updating_published', false)) {
+            // Captured before anything is written: the agent has to be told it
+            // changed something the public can already see, and that fact must
+            // travel as data rather than as a sentence the model might drop.
+            $wasPublished = (bool) $entry->published;
+
+            if ($wasPublished && ! app(PublishedEditPolicy::class)->allows()) {
                 throw new TwillAiException(
                     'This entry is PUBLISHED and live. You may only edit drafts. Ask the editor to make the change themselves, or to enable twill-ai.allow_updating_published.'
                 );
@@ -100,6 +106,10 @@ DESC;
                 'status' => $entry->published ? 'published (content updated)' : 'draft',
                 'module' => $module,
                 'id' => $entry->id,
+                'was_published' => $wasPublished,
+                'warning' => $wasPublished
+                    ? 'This entry is PUBLISHED and live. The change is visible to visitors now. Tell the editor you changed live content.'
+                    : null,
                 'edit_url' => $this->registry->editUrl($module, $entry->id),
             ];
         });

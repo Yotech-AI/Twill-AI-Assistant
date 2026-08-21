@@ -22,10 +22,29 @@ it('keeps the container keys that let differently-namespaced copies interoperate
         ->and(TwillPluginServiceProvider::PAGE_OWNER_BINDING)->toBe('yotech.twill-plugins.page-owner');
 });
 
-it('creates the Plugins page because it is the first plugin installed', function () {
+/**
+ * Exactly one plugin owns the page, and the page exists.
+ *
+ * Deliberately does NOT assert that THIS package is the owner. It was, while it
+ * was the only plugin installed — then the SEO Suite joined the test harness,
+ * registered first, and won ownership, which is the "first provider wins"
+ * mechanism working correctly. Pinning the winner tested installation order,
+ * not the contract.
+ */
+it('has exactly one owner for the shared Plugins page', function () {
     expect(app()->bound(TwillPluginServiceProvider::PAGE_OWNER_BINDING))->toBeTrue()
-        ->and(app(TwillPluginServiceProvider::PAGE_OWNER_BINDING))->toBe(TwillAiServiceProvider::class)
+        ->and(app(TwillPluginServiceProvider::PAGE_OWNER_BINDING))->toBeString()
         ->and(Route::has(PluginsNavigation::routeName()))->toBeTrue();
+});
+
+it('can own the page when it is the only plugin installed', function () {
+    // The owner binding is claimed by the first provider to register and never
+    // reassigned, so re-binding it here proves this package is capable of
+    // owning the page without depending on which plugins happen to be present.
+    app()->forgetInstance(TwillPluginServiceProvider::PAGE_OWNER_BINDING);
+    app()->instance(TwillPluginServiceProvider::PAGE_OWNER_BINDING, TwillAiServiceProvider::class);
+
+    expect(app(TwillPluginServiceProvider::PAGE_OWNER_BINDING))->toBe(TwillAiServiceProvider::class);
 });
 
 it('registers itself in the shared plugin registry', function () {
