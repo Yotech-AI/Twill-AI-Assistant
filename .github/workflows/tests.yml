@@ -18,13 +18,16 @@ jobs:
         php: ['8.3', '8.4']
         laravel: ['12', '13']
         mcp: ['0.5', '0.9']
+        # Both supported laravel/ai series. Plain `composer update` would
+        # always pick the 0.10 series, so 0.3 is pinned explicitly per cell.
+        ai: ['0.3.2', '0.10.0']
         include:
           - laravel: '12'
             testbench: '10'
           - laravel: '13'
             testbench: '11'
 
-    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }} / mcp ${{ matrix.mcp }}
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }} / mcp ${{ matrix.mcp }} / ai ${{ matrix.ai }}
 
     steps:
       - uses: actions/checkout@v4
@@ -40,6 +43,8 @@ jobs:
 
       - name: Install dependencies
         run: |
+          composer require --no-update --no-interaction \
+            "laravel/ai:^${{ matrix.ai }}"
           composer require --no-update --no-interaction --dev \
             "laravel/framework:^${{ matrix.laravel }}.0" \
             "orchestra/testbench:^${{ matrix.testbench }}.0" \
