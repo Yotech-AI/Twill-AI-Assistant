@@ -9,7 +9,7 @@
     "php": "^8.3",
     "illuminate/support": "^12.0 || ^13.0",
     "area17/twill": "^3.5",
-    "laravel/ai": "^0.3.2"
+    "laravel/ai": "^0.3.2 || ^0.10.0"
   },
   "require-dev": {
     "orchestra/testbench": "^10.0 || ^11.0",
