@@ -4,6 +4,7 @@ namespace TwillAi\Console;
 
 use A17\Twill\Facades\TwillBlocks;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Mcp\Server;
 use Laravel\Passport\Contracts\OAuthenticatable;
 use Throwable;
@@ -141,6 +142,28 @@ class DoctorCommand extends Command
     }
 
     /**
+     * The SDK's conversation store is the one schema dependency that lives
+     * outside this package's own migrations; without its tables the first
+     * chat reply dies mid-run on the conversation insert. Guarded like
+     * storedSettings(): the doctor must still run before any migration has.
+     */
+    protected function reportConversationTables(): void
+    {
+        try {
+            $present = Schema::hasTable('agent_conversations')
+                && Schema::hasTable('agent_conversation_messages');
+        } catch (Throwable) {
+            $present = false;
+        }
+
+        if ($present) {
+            $this->line('  [OK ] laravel/ai conversation tables exist.');
+        } else {
+            $this->error('  [XXX] laravel/ai conversation tables are missing — run: php artisan migrate');
+        }
+    }
+
+    /**
      * The SEO integration is gated on a config flag AND the Suite being
      * installed, and it moves a safety default — whether the agent may edit
      * entries a human already published. Both belong in a wiring report:
@@ -213,6 +236,8 @@ class DoctorCommand extends Command
             $this->line('         A worker must be running: php artisan queue:work '.$connection
                 .' --queue='.config('twill-ai.queue', 'twill-ai'));
         }
+
+        $this->reportConversationTables();
 
         $this->reportSeo();
         if (! config('twill-ai.mcp.enabled')) {

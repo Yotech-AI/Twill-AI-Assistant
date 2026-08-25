@@ -7,7 +7,9 @@ use A17\Twill\View\Components\Navigation\NavigationLink;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
+use Laravel\Ai\AiServiceProvider as AiSdkServiceProvider;
 use Laravel\Mcp\Server;
+use ReflectionClass;
 use TwillAi\PluginPage\TwillPluginServiceProvider;
 use TwillSeo\Analysis\AnalysisRunner;
 use TwillSeo\Services\ModelRegistry;
@@ -79,12 +81,43 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'twill-ai');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadSdkConversationMigrations();
 
         $this->registerRoutes();
         $this->registerNavigation();
         $this->registerFloatingWidget();
         $this->registerMcp();
         $this->registerSeo();
+    }
+
+    /**
+     * laravel/ai only PUBLISHES its conversation-store migrations — it never
+     * loads them — and twill-ai:install has no publish step for them either,
+     * so the documented install left hosts without agent_conversations and
+     * the first chat reply failed on insert. Register the SDK's migration
+     * path so a plain `php artisan migrate` creates the tables.
+     */
+    protected function loadSdkConversationMigrations(): void
+    {
+        $path = $this->sdkConversationMigrationsPath();
+
+        if ($path !== null) {
+            $this->loadMigrationsFrom($path);
+        }
+    }
+
+    /**
+     * Null once the host published its own copy (vendor:publish rewrites the
+     * date prefix, so match on the suffix) — a second registration would run
+     * the same Schema::create under a different migration name and fail.
+     */
+    protected function sdkConversationMigrationsPath(): ?string
+    {
+        if (glob($this->app->databasePath('migrations/*_create_agent_conversations_table.php')) !== []) {
+            return null;
+        }
+
+        return dirname((new ReflectionClass(AiSdkServiceProvider::class))->getFileName(), 2).'/database/migrations';
     }
 
     /**
