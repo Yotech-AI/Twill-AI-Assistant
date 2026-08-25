@@ -1,0 +1,60 @@
+name: release
+
+# Packagist updates itself from the tag via its GitHub hook, but a tag alone
+# creates no GitHub Release — which is why v1.1.2 and v1.2.0 were on Packagist
+# while the repo page still advertised v1.1.1. This closes that gap so the two
+# can never disagree again.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: publish the GitHub Release
+
+    steps:
+      # Annotated tags carry a message written at tag time; that is the release
+      # note. Full history so the tag object itself is available, not just the
+      # commit it points at.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Build the release notes from the tag
+        id: notes
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+
+          # %(contents) is empty for a lightweight tag; fall back to generated
+          # notes rather than publishing a release with an empty body.
+          BODY="$(git for-each-ref "refs/tags/${TAG}" --format='%(contents)')"
+
+          if [ -z "$(printf '%s' "$BODY" | tr -d '[:space:]')" ]; then
+            echo "lightweight tag — falling back to generated notes"
+            echo "generate=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "generate=false" >> "$GITHUB_OUTPUT"
+            {
+              echo 'body<<TAG_BODY_EOF'
+              printf '%s\n' "$BODY"
+              echo 'TAG_BODY_EOF'
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+          case "$TAG" in
+            *-alpha*|*-beta*|*-rc*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body: ${{ steps.notes.outputs.body }}
+          generate_release_notes: ${{ steps.notes.outputs.generate }}
+          prerelease: ${{ steps.notes.outputs.prerelease }}

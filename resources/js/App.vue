@@ -170,6 +170,7 @@ onMounted(async () => {
                     :chats="chats"
                     :expanded="expanded"
                     @chat-created="onChatCreated"
+                    @stream-finished="refreshChats"
                     @select-chat="selectChat"
                     @new-chat="newChat"
                     @toggle-expand="toggleExpanded"
