@@ -30,12 +30,23 @@ jobs:
         run: |
           TAG="${GITHUB_REF_NAME}"
 
-          # %(contents) is empty for a lightweight tag; fall back to generated
-          # notes rather than publishing a release with an empty body.
-          BODY="$(git for-each-ref "refs/tags/${TAG}" --format='%(contents)')"
+          # actions/checkout leaves refs/tags/$TAG pointing at the COMMIT rather
+          # than at the annotated tag object, so %(contents) returned the commit
+          # message and v1.2.3 first published with a merge-commit body.
+          # Re-fetch to replace the ref with the real tag object.
+          git fetch --force origin "refs/tags/${TAG}:refs/tags/${TAG}"
+
+          # %(contents) is the commit message for a lightweight tag, which is
+          # not release notes, so fall back to generated notes unless this ref
+          # is a genuine tag object with a message of its own.
+          if [ "$(git cat-file -t "refs/tags/${TAG}")" = 'tag' ]; then
+            BODY="$(git for-each-ref "refs/tags/${TAG}" --format='%(contents)')"
+          else
+            BODY=''
+          fi
 
           if [ -z "$(printf '%s' "$BODY" | tr -d '[:space:]')" ]; then
-            echo "lightweight tag — falling back to generated notes"
+            echo 'lightweight tag or no message — falling back to generated notes'
             echo "generate=true" >> "$GITHUB_OUTPUT"
           else
             echo "generate=false" >> "$GITHUB_OUTPUT"
