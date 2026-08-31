@@ -6,7 +6,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Client;
 use Laravel\Passport\Token;
-use ReflectionProperty;
 use Throwable;
 use TwillAi\Mcp\Models\McpClient;
 use TwillAi\Mcp\Servers\TwillContentServer;
@@ -53,7 +52,9 @@ class DoctorCommand extends Command
 
         $this->newLine();
 
-        $tools = (new ReflectionProperty(TwillContentServer::class, 'tools'))->getDefaultValue();
+        // The live list, not the property default: the SEO tools are added at
+        // construction, so reflecting the default under-reported them.
+        $tools = TwillContentServer::effectiveTools();
         $broken = [];
 
         foreach ($tools as $tool) {

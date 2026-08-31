@@ -4,6 +4,7 @@ namespace TwillAi\Mcp\Servers;
 
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Contracts\Transport;
+use ReflectionProperty;
 use TwillAi\Mcp\Tools\AnalyzeSeoText;
 use TwillAi\Mcp\Tools\CreateContent;
 use TwillAi\Mcp\Tools\GetContent;
@@ -65,15 +66,34 @@ class TwillContentServer extends Server
 
         $this->instructions = app(PromptComposer::class)->mcpInstructions();
 
-        // Appended here rather than in the property default, because the SEO
-        // gate is only decided at boot. A connector on a site without the Suite
-        // sees exactly the eight content tools.
+        $this->tools = static::effectiveTools();
+    }
+
+    /**
+     * The tools this server actually exposes right now.
+     *
+     * Separate from the $tools default because the SEO gate is only decided at
+     * boot, and because `mcp:doctor` needs the same answer WITHOUT constructing
+     * a server — it has no Transport. It used to read the property default by
+     * reflection, so it reported eight tools on a site exposing eleven and
+     * never resolve-checked the three it could not see.
+     *
+     * @return array<int, class-string>
+     */
+    public static function effectiveTools(): array
+    {
+        $tools = (new ReflectionProperty(static::class, 'tools'))->getDefaultValue();
+
+        // A connector on a site without the Suite sees exactly the eight
+        // content tools.
         if (app(SeoBridgeContract::class)->available()) {
-            $this->tools = array_merge($this->tools, [
+            $tools = array_merge($tools, [
                 GetSeo::class,
                 AnalyzeSeoText::class,
                 UpdateSeo::class,
             ]);
         }
+
+        return $tools;
     }
 }
