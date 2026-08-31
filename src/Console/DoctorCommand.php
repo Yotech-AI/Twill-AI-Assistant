@@ -241,7 +241,15 @@ class DoctorCommand extends Command
 
         $this->reportSeo();
         if (! config('twill-ai.mcp.enabled')) {
-            $this->line('  [ - ] MCP connector is disabled.');
+            // Named in full because the failure it produces is a bare 404 on
+            // the endpoint, with no hint anywhere that a flag is responsible —
+            // and `mcp:doctor`, the command that would explain it, is
+            // registered by the same gated provider, so it does not exist
+            // either. A site upgrading from a hand-rolled MCP that had no such
+            // flag loses its connector on deploy and sees only the 404.
+            $this->line('  [ - ] MCP connector is disabled, so /mcp/* returns 404 and mcp:doctor');
+            $this->line('         is unavailable. Turn it on with TWILL_AI_MCP_ENABLED=true,');
+            $this->line('         then: php artisan config:clear && php artisan route:cache');
 
             return;
         }
