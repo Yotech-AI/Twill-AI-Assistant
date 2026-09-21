@@ -1,7 +1,12 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use Laravel\Mcp\Facades\Mcp;
+use Laravel\Passport\Http\Controllers\ApproveAuthorizationController;
+use Laravel\Passport\Http\Controllers\DenyAuthorizationController;
+use TwillAi\Mcp\Http\Controllers\ConnectorAuthorizationController;
 use TwillAi\Mcp\Http\Middleware\ActAsTwillUser;
+use TwillAi\Mcp\Http\Middleware\RequireCmsLogin;
 use TwillAi\Mcp\Servers\TwillContentServer;
 
 /*
@@ -34,6 +39,28 @@ Mcp::local(config('twill-ai.mcp.local_handle', 'twill-content'), TwillContentSer
 Mcp::oauthRoutes();
 
 /*
+ * The connector's own approval screen, behind the CMS login.
+ *
+ * Passport's /oauth/authorize authenticates on the one global passport.guard,
+ * which a host serving its own customer API or MCP server needs to keep for
+ * its customers. These routes are the connector's instead: the discovery
+ * documents ServeConnectorDiscovery serves for the connector endpoint point
+ * Claude here, and the guard is twill_users whatever passport.guard says.
+ * Tokens are still issued by Passport's shared /oauth/token.
+ */
+Route::middleware('web')
+    ->prefix(trim((string) config('twill-ai.mcp.oauth_prefix', 'twill-ai/oauth'), '/'))
+    ->name('twill-ai.mcp.oauth.')
+    ->group(function (): void {
+        Route::get('authorize', [ConnectorAuthorizationController::class, 'authorize'])->name('authorize');
+
+        Route::middleware(RequireCmsLogin::class)->group(function (): void {
+            Route::post('authorize', [ApproveAuthorizationController::class, 'approve'])->name('approve');
+            Route::delete('authorize', [DenyAuthorizationController::class, 'deny'])->name('deny');
+        });
+    });
+
+/*
  * Remote server: what an external MCP client such as Claude connects to.
  *
  * Auth is an OAuth access token issued by Passport on the package's own
@@ -42,7 +69,7 @@ Mcp::oauthRoutes();
  * scheme Claude's custom connector dialog offers.
  *
  * The token belongs to the Twill user who approved the connector (the approval
- * screen sits behind the CMS login). ActAsTwillUser then swaps in the
+ * screen above sits behind the CMS login). ActAsTwillUser then swaps in the
  * connector's own attribution user so drafts are credited to the connector
  * rather than to that admin.
  *

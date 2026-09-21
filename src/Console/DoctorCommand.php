@@ -274,21 +274,11 @@ class DoctorCommand extends Command
             $this->line('  [OK ] twill.models.user implements OAuthenticatable.');
         }
 
-        // The MCP approval screen is rendered on Passport's /oauth/authorize
-        // route, which authenticates on config('passport.guard'). A Twill admin
-        // is logged in on twill_users, so any other value sends them to the
-        // wrong login and the connector can never be approved.
-        $passportGuard = config('passport.guard');
-
-        if ($passportGuard !== 'twill_users') {
-            $this->error("  [XXX] passport.guard is \"{$passportGuard}\" — the MCP approval screen will not");
-            $this->line('         recognise a logged-in Twill admin. Set it in config/passport.php:');
-            $this->line("             'guard' => 'twill_users',");
-            $this->line('         (If Passport also serves your own customer API, that API must move to');
-            $this->line('          its own guard first — this setting is global to Passport.)');
-        } else {
-            $this->line('  [OK ] passport.guard is twill_users.');
-        }
+        // The connector approves on its own screen, behind the CMS login, so
+        // passport.guard is the application's to set. mcp:doctor follows the
+        // discovery chain end to end.
+        $this->line('  [OK ] The connector approves on its own screen behind the CMS login;');
+        $this->line('        passport.guard ("'.config('passport.guard', 'web').'") is left to your application.');
 
         $keyPath = storage_path('oauth-private.key');
 

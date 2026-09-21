@@ -277,7 +277,7 @@
     </div>
 
     <div class="actions">
-        <form method="POST" action="{{ route('passport.authorizations.deny') }}">
+        <form method="POST" action="{{ $denyUrl ?? route('passport.authorizations.deny') }}">
             @csrf
             @method('DELETE')
             <input type="hidden" name="state" value="">
@@ -286,7 +286,7 @@
             <button type="submit" class="btn-deny">Cancel</button>
         </form>
 
-        <form method="POST" action="{{ route('passport.authorizations.approve') }}" id="authorizeForm">
+        <form method="POST" action="{{ $approveUrl ?? route('passport.authorizations.approve') }}" id="authorizeForm">
             @csrf
             <input type="hidden" name="state" value="">
             <input type="hidden" name="client_id" value="{{ $client->id }}">

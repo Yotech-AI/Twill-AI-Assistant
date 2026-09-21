@@ -96,7 +96,7 @@ all eight tools resolve, and every client with its token count and attribution.
 | `403` mentioning a registered connector | The OAuth client self-registered and is not allow-listed — see above |
 | `403` mentioning attribution | Connector has no linked Twill user — re-create it |
 | `403` mentioning HTTPS | Connector pointed at `http://`, or a proxy not forwarding the scheme |
-| Approval page 404s or redirects to the customer login | `passport.guard` is not `twill_users` |
+| Approval page redirects to the customer login | Claude was sent to Passport's `/oauth/authorize` instead of the connector's own screen. Run `mcp:doctor`: its `chain` line names the broken link |
 | Token requests fail after a deploy | `passport:keys` never ran on that server — see below |
 | `429` | Rate limit (30/min). Expected under bursty use; back off |
 | Tool errors naming a block | Almost always a **stale queue worker** — see below |

@@ -3,11 +3,16 @@
 namespace TwillAi\Mcp;
 
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
+use TwillAi\Mcp\Http\Controllers\ConnectorAuthorizationController;
+use TwillAi\Mcp\Http\Middleware\ServeConnectorDiscovery;
 
 /**
  * Keeps the MCP integration self-contained.
@@ -18,10 +23,20 @@ use Laravel\Passport\Passport;
  */
 class McpServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        // The connector's approval screen authenticates on the CMS guard, for
+        // this controller only. Passport's own controller keeps passport.guard.
+        $this->app->when(ConnectorAuthorizationController::class)
+            ->needs(StatefulGuard::class)
+            ->give(fn () => Auth::guard('twill_users'));
+    }
+
     public function boot(): void
     {
         $this->registerServers();
-        $this->registerAuthorizationScreen();
+        $this->registerDiscovery();
+        $this->registerLegacyAuthorizationScreen();
         $this->registerApproverLoginRedirect();
 
         if ($this->app->runningInConsole()) {
@@ -48,15 +63,31 @@ class McpServiceProvider extends ServiceProvider
     }
 
     /**
-     * The screen a Twill admin sees when a connector asks for access.
-     *
-     * Passport renders its own generic view otherwise; this one names the
-     * connector requesting approval, which matters because dynamic client
-     * registration lets anyone create a client and the admin's judgement is
-     * what stops an unexpected one being approved.
+     * The connector's discovery documents, answered before routing.
+     * ServeConnectorDiscovery explains why this is global middleware and not
+     * a route.
      */
-    protected function registerAuthorizationScreen(): void
+    protected function registerDiscovery(): void
     {
+        $this->app->make(HttpKernel::class)->prependMiddleware(ServeConnectorDiscovery::class);
+    }
+
+    /**
+     * Passport's global approval screen, for hosts on the old setup only.
+     *
+     * Before the connector had its own approval routes, a host set
+     * passport.guard to twill_users and Claude approved on Passport's
+     * /oauth/authorize, rendered with this package's view. New connections are
+     * sent to the connector's own screen instead, so the global view is only
+     * replaced where Passport's /oauth/authorize is already a CMS screen. A
+     * host whose passport.guard serves its customers keeps its own view.
+     */
+    protected function registerLegacyAuthorizationScreen(): void
+    {
+        if (config('passport.guard') !== 'twill_users') {
+            return;
+        }
+
         Passport::authorizationView(
             fn (array $parameters) => view('twill-ai::mcp.authorize', $parameters)
         );

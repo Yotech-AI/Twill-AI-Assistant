@@ -19,6 +19,7 @@
         </testsuite>
         <testsuite name="Mcp">
             <directory>tests/Feature/Mcp</directory>
+            <directory>tests/Feature/McpLegacyGuard</directory>
         </testsuite>
         <testsuite name="Seo">
             <directory>tests/Feature/Seo</directory>
