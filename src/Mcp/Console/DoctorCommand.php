@@ -184,7 +184,9 @@ class DoctorCommand extends Command
         $kernel = app(HttpKernel::class);
         $expectedResource = url('/.well-known/oauth-protected-resource/'.ServeConnectorDiscovery::resourcePath());
 
-        $challenge = $kernel->handle(Request::create('/'.ServeConnectorDiscovery::resourcePath(), 'POST', server: ['HTTP_ACCEPT' => 'application/json']));
+        // Absolute, like the two requests below: a bare path is sent to
+        // localhost, and the 401 would then name localhost instead of APP_URL.
+        $challenge = $kernel->handle(Request::create(url(ServeConnectorDiscovery::resourcePath()), 'POST', server: ['HTTP_ACCEPT' => 'application/json']));
         $header = (string) $challenge->headers->get('WWW-Authenticate');
 
         if (! str_contains($header, 'resource_metadata="'.$expectedResource.'"')) {
