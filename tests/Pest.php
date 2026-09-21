@@ -7,6 +7,7 @@ use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
 use TwillAi\Mcp\Models\McpClient;
+use TwillAi\Tests\HostOAuthRoutesMcpTestCase;
 use TwillAi\Tests\LegacyGuardMcpTestCase;
 use TwillAi\Tests\McpTestCase;
 use TwillAi\Tests\TestCase;
@@ -22,6 +23,7 @@ uses(TestCase::class)->in('Feature/Package', 'Feature/TwillAi', 'Feature/Seo');
 if (class_exists(Passport::class)) {
     uses(McpTestCase::class)->in('Feature/Mcp');
     uses(LegacyGuardMcpTestCase::class)->in('Feature/McpLegacyGuard');
+    uses(HostOAuthRoutesMcpTestCase::class)->in('Feature/McpHostRoutes');
 }
 
 /**

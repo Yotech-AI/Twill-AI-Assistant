@@ -35,8 +35,17 @@ Mcp::local(config('twill-ai.mcp.local_handle', 'twill-content'), TwillContentSer
  *
  * Self-registration alone grants nothing: the client still has no row in
  * mcp_clients, and ActAsTwillUser refuses it.
+ *
+ * Only when the host has not registered them already. A host that runs its
+ * own MCP server calls Mcp::oauthRoutes() itself, often inside a throttle
+ * group because /oauth/register is anonymous. Registering the same POST route
+ * again would replace the host's (the later route for a method and URI wins)
+ * and silently drop its rate limit. These routes are the same for every MCP
+ * server on the site, so the host's copy serves the connector too.
  */
-Mcp::oauthRoutes();
+if (! array_key_exists('oauth/register', Route::getRoutes()->get('POST'))) {
+    Mcp::oauthRoutes();
+}
 
 /*
  * The connector's own approval screen, behind the CMS login.
