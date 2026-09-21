@@ -87,10 +87,23 @@ Then set `TWILL_AI_MCP_ENABLED=true` and:
 
 1. `php artisan passport:keys`
 2. Point `twill.models.user` at a user model that implements `Laravel\Passport\Contracts\OAuthenticatable` — either `TwillAi\Models\TwillUser`, or add `TwillAi\Concerns\ActsAsOAuthUser` to your own Twill user subclass.
-3. Set `'guard' => 'twill_users'` in `config/passport.php`, so the connector approval screen recognises a logged-in Twill admin instead of redirecting to your customer login. This setting is global to Passport: if Passport also serves your own customer API, move that API to its own guard first. The package deliberately does **not** change this for you.
-4. `php artisan mcp:client-create` to register a connector and the Twill user its drafts are attributed to.
+3. `php artisan mcp:client-create` to register a connector and the Twill user its drafts are attributed to.
 
-`php artisan twill-ai:doctor` verifies all four. The connector authenticates on its own `twill-mcp` guard rather than claiming `api`, which in most applications belongs to Sanctum.
+`php artisan twill-ai:doctor` verifies the setup, and `php artisan mcp:doctor` follows the whole sign-in chain the way Claude does. The connector authenticates on its own `twill-mcp` guard rather than claiming `api`, which in most applications belongs to Sanctum.
+
+### Its own sign-in, beside yours
+
+The connector runs its own OAuth authorization server, so it sits next to an application that uses Passport for its own customers (a customer API, or its own MCP server) without changing anything global:
+
+- **Its own approval screen**, at `/twill-ai/oauth/authorize` (`twill-ai.mcp.oauth_prefix`), behind the CMS login. `passport.guard` stays whatever your application needs; leave it at `web` for a customer login.
+- **Its own discovery documents.** Claude reads the connector's protected-resource document and its issuer's metadata, which name that approval screen. Every other discovery request, including your own MCP server's, is answered by laravel/mcp as before. The connector answers its addresses in global middleware, before routing, so route order and `route:cache` cannot change the result.
+- **Your approval screen is left alone.** The package only replaces Passport's global approval view on the old setup below.
+- **Connector clients are bound to the CMS user provider** (`oauth_clients.provider`), so their tokens are refused by any other Passport guard. `mcp:client-create` does this; `mcp:doctor` flags an older client that is not bound.
+- **Tested versions only.** The package declares conflicts with untested laravel/mcp (anything but 0.5.9+ and 0.9) and Passport (anything but 13.7.1 to 13.x), so an upgrade the connector has not been tested against is refused at install time instead of failing at sign-in.
+
+Token issuing (`/oauth/token`) and dynamic registration (`/oauth/register`) are shared with the application; neither depends on who is logged in.
+
+**Upgrading from the old setup.** Earlier versions asked you to set `passport.guard` to `twill_users`. A site that did keeps working: Passport's `/oauth/authorize` still shows the connector's screen there, and new connections go to the connector's own screen. You can set `passport.guard` back to what your application needs; existing connector tokens are unaffected.
 
 Registering a client is what grants access: OAuth dynamic client registration lets anyone create a client, but a client with no row in `mcp_clients` is refused.
 

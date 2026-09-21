@@ -173,8 +173,8 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
      * request to the endpoint died with "Auth guard [twill-mcp] is not defined"
      * instead of the connector simply staying dormant.
      *
-     * Booting also means Passport's own config is already merged, which is what
-     * makes the passport.guard fill below honest rather than order-dependent.
+     * passport.guard is not touched here: the connector approves on its own
+     * routes behind the CMS login, so the host keeps that global value.
      */
     protected function registerMcpConfigDefaults(): void
     {
@@ -184,14 +184,6 @@ class TwillAiServiceProvider extends TwillPluginServiceProvider
             'driver' => 'passport',
             'provider' => 'twill_users',
         ]);
-
-        // Passport ships its own default ('web'), so this only ever fires when
-        // the host has not published Passport's config at all. It is NOT forced
-        // otherwise: passport.guard is global, and overriding a host that uses
-        // Passport for its own customer API would break that API. When it does
-        // not say twill_users, the OAuth approval screen sits behind the wrong
-        // login — twill-ai:doctor reports that with the one-line fix.
-        $this->fillConfig('passport.guard', 'twill_users');
     }
 
     protected function fillConfig(string $key, mixed $value): void

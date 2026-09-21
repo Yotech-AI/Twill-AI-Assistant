@@ -53,6 +53,12 @@ class CreateClientCommand extends Command
             return self::FAILURE;
         }
 
+        // Bind the client to the connector's user provider. Passport's token
+        // guard then refuses this client's tokens on any guard with another
+        // provider, such as a host's customer API, instead of looking up a
+        // customer with the same id as the approving CMS admin.
+        $client->forceFill(['provider' => self::connectorProvider()])->save();
+
         $mcpClient = McpClient::create([
             'name' => $name,
             'oauth_client_id' => $client->getKey(),
@@ -146,5 +152,13 @@ class CreateClientCommand extends Command
         $host = parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'example.com';
 
         return 'mcp+'.Str::slug($name).'@'.$host;
+    }
+
+    /**
+     * The user provider behind the connector's `twill-mcp` guard.
+     */
+    public static function connectorProvider(): string
+    {
+        return (string) config('auth.guards.twill-mcp.provider', 'twill_users');
     }
 }

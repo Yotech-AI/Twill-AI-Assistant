@@ -1,74 +1,12 @@
 <?php
 
-use A17\Twill\Models\Enums\UserRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Testing\TestResponse;
 use Laravel\Passport\AccessToken;
-use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
 use TwillAi\Mcp\Http\Middleware\ActAsTwillUser;
 use TwillAi\Mcp\Models\McpClient;
-
-function twillAttributionUser(string $email = 'mcp+test@example.com')
-{
-    $class = config('twill.models.user');
-
-    $user = new $class;
-    $user->name = 'Connector';
-    $user->email = $email;
-    $user->role = UserRole::VIEWONLY;
-    $user->published = false;
-    $user->save();
-
-    return $user;
-}
-
-/**
- * A registered connector: an OAuth client plus the registry row that maps it to
- * the Twill user its drafts are attributed to.
- *
- * @return array{0: McpClient, 1: Client}
- */
-function registeredConnector(bool $linked = true): array
-{
-    $oauthClient = app(ClientRepository::class)->createAuthorizationCodeGrantClient(
-        'Test Connector',
-        ['https://claude.ai/api/mcp/auth_callback'],
-    );
-
-    $client = McpClient::create([
-        'name' => 'Test Connector',
-        'oauth_client_id' => $oauthClient->getKey(),
-        'twill_user_id' => $linked ? twillAttributionUser()->id : null,
-    ]);
-
-    return [$client, $oauthClient];
-}
-
-/**
- * The admin who approved the connector. Deliberately a different person from
- * the attribution user, so tests can tell the two apart.
- */
-function approvingAdmin()
-{
-    return twillAttributionUser('admin@example.com');
-}
-
-function mcpEndpoint(): string
-{
-    return '/'.trim((string) config('twill-ai.mcp.path', 'mcp/twill'), '/');
-}
-
-function callMcp(): TestResponse
-{
-    return test()->postJson(mcpEndpoint(), [
-        'jsonrpc' => '2.0',
-        'id' => 1,
-        'method' => 'tools/list',
-    ]);
-}
 
 it('rejects a request with no token', function () {
     callMcp()->assertStatus(401);
@@ -83,7 +21,7 @@ it('rejects a request with no token', function () {
 it('sends an unapproved connector\'s approver to the CMS login, not the customer login', function () {
     [, $oauthClient] = registeredConnector();
 
-    test()->get('/oauth/authorize?'.http_build_query([
+    test()->get(route('twill-ai.mcp.oauth.authorize').'?'.http_build_query([
         'client_id' => $oauthClient->getKey(),
         'redirect_uri' => 'https://claude.ai/api/mcp/auth_callback',
         'response_type' => 'code',
@@ -108,15 +46,37 @@ it('renders the approval screen without needing a built frontend', function () {
         'scopes' => [],
         'authToken' => 'test-auth-token',
         'appearance' => 'light',
+        'approveUrl' => route('twill-ai.mcp.oauth.approve'),
+        'denyUrl' => route('twill-ai.mcp.oauth.deny'),
     ])->render();
 
     expect($html)
         ->toContain('Authorize Test Connector')
         ->toContain($admin->email)
-        ->toContain(route('passport.authorizations.approve'))
-        ->toContain(route('passport.authorizations.deny'))
+        ->toContain(route('twill-ai.mcp.oauth.approve'))
+        ->toContain(route('twill-ai.mcp.oauth.deny'))
         ->toContain('test-auth-token')
         ->not->toContain('/build/');
+});
+
+/*
+ * A host on the old setup (passport.guard = twill_users) still renders this
+ * view from Passport's global /oauth/authorize, which passes no URLs of its
+ * own; the forms must then post to Passport's routes.
+ */
+it('falls back to Passport\'s approve and deny routes when rendered by Passport', function () {
+    [, $oauthClient] = registeredConnector();
+
+    $html = view('twill-ai::mcp.authorize', [
+        'client' => $oauthClient,
+        'user' => approvingAdmin(),
+        'scopes' => [],
+        'authToken' => 'test-auth-token',
+    ])->render();
+
+    expect($html)
+        ->toContain(route('passport.authorizations.approve'))
+        ->toContain(route('passport.authorizations.deny'));
 });
 
 it('accepts a token issued to a registered connector', function () {

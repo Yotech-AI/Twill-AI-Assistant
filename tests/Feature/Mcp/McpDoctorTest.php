@@ -42,3 +42,15 @@ it('resolves every tool it reports, SEO ones included', function () {
     $this->artisan('mcp:doctor')
         ->expectsOutputToContain('all resolve');
 });
+
+it('follows the discovery chain to the CMS approval screen', function () {
+    $this->artisan('mcp:doctor')
+        ->expectsOutputToContain('401 → resource document → issuer → CMS approval screen');
+});
+
+it('warns about a connector whose OAuth client is not bound to the CMS provider', function () {
+    registeredConnector();
+
+    $this->artisan('mcp:doctor')
+        ->expectsOutputToContain('is not bound to the twill_users provider');
+});

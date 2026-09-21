@@ -46,12 +46,19 @@ abstract class McpTestCase extends TestCase
         // twill_users provider the guard resolves through.
         $config->set('twill.models.user', TwillUser::class);
 
-        // The documented host step. The package deliberately does NOT force
-        // this — passport.guard is global, and overwriting it would break a host
-        // that serves its own customer API through Passport — so the suite
-        // performs it exactly as a host would, and the approval-screen test
-        // below is what proves the step is necessary.
-        $config->set('passport.guard', 'twill_users');
+        // Twill copies twill.models.user into the twill_users auth provider
+        // while it registers, which in Testbench is before this runs. A host
+        // sets twill.models.user in config/twill.php, present from the start,
+        // so the provider sees it; here it is set directly to match. Only the
+        // full sign-in test resolves a user through this provider, since the
+        // others use Passport::actingAs.
+        $config->set('auth.providers.twill_users.model', TwillUser::class);
+
+        // passport.guard is deliberately left at Passport's own default, `web`.
+        // The connector runs its own authorization server behind the CMS login,
+        // so a host no longer changes this global value for it; the suite runs
+        // the way such a host does. LegacyGuardMcpTestCase covers a host that
+        // still sets it to twill_users from the old setup instructions.
     }
 
     protected function passportKeyPath(): string

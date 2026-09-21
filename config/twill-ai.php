@@ -247,6 +247,12 @@ return [
         'path' => 'mcp/twill',
         'local_handle' => 'twill-content',
 
+        // Where the connector's own OAuth authorization server lives: its
+        // approval screen (behind the CMS login) and its discovery documents.
+        // Kept apart from Passport's /oauth routes so a host's own OAuth
+        // clients keep their own approval screen and passport.guard.
+        'oauth_prefix' => 'twill-ai/oauth',
+
         // Rate limit for the remote endpoint, matching the in-admin chat.
         'throttle' => '30,1',
     ],
