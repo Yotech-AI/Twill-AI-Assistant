@@ -14,7 +14,8 @@ it('keeps the host\'s rate limit on client registration', function () {
     ]);
 
     foreach (range(1, 3) as $attempt) {
-        $register()->assertCreated();
+        // laravel/mcp 0.9 answers a registration with 201, 0.5 with 200.
+        $register()->assertSuccessful();
     }
 
     $register()->assertStatus(429);
