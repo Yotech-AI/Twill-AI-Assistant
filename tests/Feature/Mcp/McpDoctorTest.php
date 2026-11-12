@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use TwillAi\Mcp\Servers\TwillContentServer;
 use TwillAi\Seo\SeoBridgeContract;
 use TwillAi\Tests\Fixtures\FakeSeoBridge;
@@ -53,4 +54,18 @@ it('warns about a connector whose OAuth client is not bound to the CMS provider'
 
     $this->artisan('mcp:doctor')
         ->expectsOutputToContain('is not bound to the twill_users provider');
+});
+
+/*
+ * On a real site, artisan builds URLs from APP_URL (for yostaq,
+ * http://yostaq.test). The chain check's own requests must go to that host;
+ * sent as bare paths they reached `localhost`, the 401 then named localhost,
+ * and the doctor reported a working chain as BROKEN.
+ */
+it('follows the chain on the site\'s own host, not localhost', function () {
+    app('url')->setRequest(Request::create('https://cms.example.test/'));
+
+    $this->artisan('mcp:doctor')
+        ->expectsOutputToContain('401 → resource document → issuer → CMS approval screen')
+        ->doesntExpectOutputToContain('BROKEN');
 });
