@@ -13,6 +13,7 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use TwillAi\Mcp\Http\Controllers\ConnectorAuthorizationController;
 use TwillAi\Mcp\Http\Middleware\ServeConnectorDiscovery;
+use TwillAi\Mcp\Http\Middleware\ValidateClientRegistration;
 
 /**
  * Keeps the MCP integration self-contained.
@@ -36,6 +37,7 @@ class McpServiceProvider extends ServiceProvider
     {
         $this->registerServers();
         $this->registerDiscovery();
+        $this->registerClientRegistrationRules();
         $this->registerLegacyAuthorizationScreen();
         $this->registerApproverLoginRedirect();
 
@@ -70,6 +72,16 @@ class McpServiceProvider extends ServiceProvider
     protected function registerDiscovery(): void
     {
         $this->app->make(HttpKernel::class)->prependMiddleware(ServeConnectorDiscovery::class);
+    }
+
+    /**
+     * Refuse a dynamic client registration OAuth 2.1 does not allow, before
+     * laravel/mcp takes it. ValidateClientRegistration explains why this is
+     * global middleware too.
+     */
+    protected function registerClientRegistrationRules(): void
+    {
+        $this->app->make(HttpKernel::class)->prependMiddleware(ValidateClientRegistration::class);
     }
 
     /**

@@ -201,6 +201,13 @@ onMounted(async () => {
                 :class="{ 'tai-subnav__item--active': activeView === 'settings' }"
                 @click="setView('settings')"
             >Settings</button>
+            <!-- A page of its own, so a link; the server only sends the URL
+                 to users who may approve a connector. -->
+            <a
+                v-if="config.urls.connectors"
+                class="tai-subnav__item"
+                :href="config.urls.connectors"
+            >Connectors</a>
         </nav>
 
         <div v-show="activeView === 'chat'" class="tai-page">

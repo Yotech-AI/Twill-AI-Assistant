@@ -46,6 +46,18 @@ class RevokeClientCommand extends Command
      */
     protected function revokeTokens(string $oauthClientId): void
     {
+        [$accessRevoked, $refreshRevoked] = self::revokeTokensOf($oauthClientId);
+
+        $this->info("Revoked {$accessRevoked} access token(s) and {$refreshRevoked} refresh token(s). Access stops immediately.");
+    }
+
+    /**
+     * Also what Revoke on the Connectors page does.
+     *
+     * @return array{0: int, 1: int} access and refresh tokens revoked
+     */
+    public static function revokeTokensOf(string $oauthClientId): array
+    {
         $tokenIds = Token::query()
             ->where('client_id', $oauthClientId)
             ->where('revoked', false)
@@ -60,7 +72,7 @@ class RevokeClientCommand extends Command
             ->where('revoked', false)
             ->update(['revoked' => true]);
 
-        $this->info("Revoked {$accessRevoked} access token(s) and {$refreshRevoked} refresh token(s). Access stops immediately.");
+        return [$accessRevoked, $refreshRevoked];
     }
 
     protected function deleteClient(McpClient $client): void

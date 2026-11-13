@@ -810,6 +810,7 @@
     margin-bottom: -1px;
 }
 
+a.tai-subnav__item { text-decoration: none; }
 .tai-subnav__item:hover { color: var(--tai-text); }
 .tai-subnav__item--active { color: var(--tai-text); border-bottom-color: var(--tai-accent); font-weight: 600; }
 

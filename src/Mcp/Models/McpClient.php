@@ -5,6 +5,7 @@ namespace TwillAi\Mcp\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Laravel\Passport\Client;
+use Laravel\Passport\Token;
 use TwillAi\Models\TwillUser;
 
 /**
@@ -18,7 +19,8 @@ use TwillAi\Models\TwillUser;
  *
  * It doubles as an allow-list. Passport's dynamic client registration endpoint
  * is public by design, so a self-registered client has no row here and is
- * refused by ActAsTwillUser even if a user approved it.
+ * refused by ActAsTwillUser — until a Twill editor approves it with
+ * self-service on, which is what creates its row.
  */
 class McpClient extends Model
 {
@@ -26,6 +28,8 @@ class McpClient extends Model
         'name',
         'oauth_client_id',
         'twill_user_id',
+        'approved_by',
+        'approved_at',
         'last_used_at',
     ];
 
@@ -49,9 +53,39 @@ class McpClient extends Model
         );
     }
 
+    /**
+     * The Twill user who approved this connector in the CMS. Null for one made
+     * with `php artisan mcp:client-create`.
+     */
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(
+            config('twill.models.user', TwillUser::class),
+            'approved_by'
+        );
+    }
+
+    /**
+     * Access tokens that would still be accepted: neither revoked nor expired.
+     */
+    public function liveTokenCount(): int
+    {
+        if ($this->oauth_client_id === null) {
+            return 0;
+        }
+
+        return Token::query()
+            ->where('client_id', $this->oauth_client_id)
+            ->where('revoked', false)
+            ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->count();
+    }
+
     protected function casts(): array
     {
         return [
+            'approved_by' => 'integer',
+            'approved_at' => 'datetime',
             'last_used_at' => 'datetime',
         ];
     }

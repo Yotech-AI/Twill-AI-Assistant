@@ -2,11 +2,13 @@
 
 use Illuminate\Support\Facades\Route;
 use Laravel\Mcp\Facades\Mcp;
-use Laravel\Passport\Http\Controllers\ApproveAuthorizationController;
 use Laravel\Passport\Http\Controllers\DenyAuthorizationController;
+use TwillAi\Mcp\Http\Controllers\ConnectorApprovalController;
 use TwillAi\Mcp\Http\Controllers\ConnectorAuthorizationController;
+use TwillAi\Mcp\Http\Controllers\ConnectorsController;
 use TwillAi\Mcp\Http\Middleware\ActAsTwillUser;
 use TwillAi\Mcp\Http\Middleware\RequireCmsLogin;
+use TwillAi\Mcp\Http\Middleware\RequireConnectorApprover;
 use TwillAi\Mcp\Servers\TwillContentServer;
 
 /*
@@ -34,7 +36,9 @@ Mcp::local(config('twill-ai.mcp.local_handle', 'twill-content'), TwillContentSer
  * fields are optional — a client that is given neither registers itself.
  *
  * Self-registration alone grants nothing: the client still has no row in
- * mcp_clients, and ActAsTwillUser refuses it.
+ * mcp_clients, and ActAsTwillUser refuses it. With self-service on, a Twill
+ * editor approving it is what gives it one; ValidateClientRegistration first
+ * refuses redirect URIs OAuth 2.1 does not allow.
  *
  * Only when the host has not registered them already. A host that runs its
  * own MCP server calls Mcp::oauthRoutes() itself, often inside a throttle
@@ -55,7 +59,9 @@ if (! array_key_exists('oauth/register', Route::getRoutes()->get('POST'))) {
  * its customers. These routes are the connector's instead: the discovery
  * documents ServeConnectorDiscovery serves for the connector endpoint point
  * Claude here, and the guard is twill_users whatever passport.guard says.
- * Tokens are still issued by Passport's shared /oauth/token.
+ * Approving is ConnectorApprovalController, which registers an app that
+ * registered itself; deny is Passport's. Tokens are still issued by Passport's
+ * shared /oauth/token.
  */
 Route::middleware('web')
     ->prefix(trim((string) config('twill-ai.mcp.oauth_prefix', 'twill-ai/oauth'), '/'))
@@ -64,9 +70,24 @@ Route::middleware('web')
         Route::get('authorize', [ConnectorAuthorizationController::class, 'authorize'])->name('authorize');
 
         Route::middleware(RequireCmsLogin::class)->group(function (): void {
-            Route::post('authorize', [ApproveAuthorizationController::class, 'approve'])->name('approve');
+            Route::post('authorize', [ConnectorApprovalController::class, 'approve'])->name('approve');
             Route::delete('authorize', [DenyAuthorizationController::class, 'deny'])->name('deny');
         });
+    });
+
+/*
+ * The Connectors page in Twill: every connector, Revoke, and "Add an app by
+ * hand". The same admin path, middleware and route names as the package's
+ * other admin routes (TwillAiServiceProvider::registerRoutes), but registered
+ * here, so they exist only with the connector.
+ */
+Route::middleware(['web', 'twill_auth:twill_users', 'impersonate', 'localization', RequireConnectorApprover::class])
+    ->prefix(trim((string) config('twill.admin_app_path', 'admin'), '/').'/ai/connectors')
+    ->name(config('twill.admin_route_name_prefix', 'twill.').'ai.connectors.')
+    ->group(function (): void {
+        Route::get('/', [ConnectorsController::class, 'index'])->name('index');
+        Route::post('/', [ConnectorsController::class, 'store'])->name('store');
+        Route::post('{connector}/revoke', [ConnectorsController::class, 'revoke'])->name('revoke');
     });
 
 /*
