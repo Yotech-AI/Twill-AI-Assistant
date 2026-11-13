@@ -261,7 +261,7 @@ class DoctorCommand extends Command
 
         $this->line('  waiting for approval: '.$waiting->count());
 
-        foreach ($waiting as $client) {
+        foreach ($waiting->take(20) as $client) {
             $hostsOfClient = array_values(array_unique(array_map(
                 fn (mixed $uri): string => is_string($uri) ? RedirectUri::host($uri) : '?',
                 (array) $client->redirect_uris,
@@ -274,6 +274,10 @@ class DoctorCommand extends Command
                 $client->created_at?->diffForHumans() ?? 'at an unknown time',
                 $client->getKey(),
             ));
+        }
+
+        if ($waiting->count() > 20) {
+            $this->line('    … and '.($waiting->count() - 20).' more. php artisan mcp:client-list --pending lists them all.');
         }
     }
 

@@ -6,9 +6,11 @@ use A17\Twill\Models\Enums\UserRole;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Laravel\Passport\AuthCode;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
 use TwillAi\Mcp\Console\CreateClientCommand;
+use TwillAi\Mcp\Console\RevokeClientCommand;
 use TwillAi\Mcp\Models\McpClient;
 use TwillAi\Models\TwillUser;
 
@@ -30,7 +32,16 @@ class ConnectorRegistrar
      */
     public function approve(Client $client, Authenticatable $approver): McpClient
     {
-        return DB::transaction(fn () => $this->register($client, self::appName($client), $approver));
+        return DB::transaction(function () use ($client, $approver) {
+            // Whatever Passport issued this client before it was a connector
+            // was approved by someone this approval did not check: anyone in
+            // the CMS with self-service off, as in 1.3, or anyone on
+            // Passport's own screen. None of it may start working now.
+            RevokeClientCommand::revokeTokensOf((string) $client->getKey());
+            AuthCode::query()->where('client_id', $client->getKey())->update(['revoked' => true]);
+
+            return $this->register($client, self::appName($client), $approver);
+        });
     }
 
     /**
@@ -109,8 +120,13 @@ class ConnectorRegistrar
         $user->name = Str::limit("{$name} (approved by {$approvedBy})", 255, '');
         $user->email = $this->uniqueEmail($name, $userClass);
         // The enum's key, which is what Twill stores and reads back through
-        // role_value. (UserRole::VIEWONLY is the label, "View only".)
-        $user->role = UserRole::VIEWONLY()->getKey();
+        // role_value. (UserRole::VIEWONLY is the label, "View only".) With
+        // Twill's permission management there is no role column: a user with
+        // no role has no permissions, which is what this one needs.
+        if (! config('twill.enabled.permissions-management')) {
+            $user->role = UserRole::VIEWONLY()->getKey();
+        }
+
         $user->password = null;
         $user->published = false;
         $user->save();

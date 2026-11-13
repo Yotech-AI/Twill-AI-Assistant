@@ -28,6 +28,13 @@ final class RedirectUri
 
     public static function permitted(string $uri): bool
     {
+        // A URI is printable ASCII. A host with other characters, such as a
+        // Cyrillic "а" in a look-alike of claude.ai, has to be sent in its
+        // xn-- form, which shows on the approval screen for what it is.
+        if (preg_match('/[^\x21-\x7E]/', $uri) === 1) {
+            return false;
+        }
+
         $parts = parse_url($uri);
 
         if ($parts === false || ! isset($parts['scheme'])) {

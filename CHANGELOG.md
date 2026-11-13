@@ -14,8 +14,11 @@ Notable changes to `yotech-ai/twill-cms-ai-assistant`. Releases before 1.3.0 are
 
 - With self-service on, only users who pass Twill's edit gate may approve a connector. A view-only user is asked to get an editor or admin.
 - The approval screen shows the name the app gave itself, where its access goes and what it may do.
-- With self-service on, `/oauth/register` accepts only the redirect URIs OAuth 2.1 allows: https, http on a loopback address, or a private-use scheme. Anything else gets `invalid_redirect_uri`. The endpoint is shared with the host application, so this applies to its own MCP clients too.
-- `update_content` never changes which languages are active; `locales` in an update payload is ignored.
+- With self-service on, `/oauth/register` accepts only the redirect URIs OAuth 2.1 allows: https, http on a loopback address, or a private-use scheme, all plain ASCII. Anything else gets `invalid_redirect_uri`. The endpoint is shared with the host application, so this applies to its own MCP clients too. A host's own `mcp.custom_schemes` list still decides which private-use schemes register.
+- A connector app that asks on Passport's own `/oauth/authorize` is sent to the connector's screen, so a host's customer login can never approve one. On the old setup (`passport.guard` = `twill_users`) Passport's screen stays, with the same checks as the connector's.
+- Approving an app that registered itself revokes the tokens it was given before it was a connector.
+- The approval screens can't be shown in a frame (`X-Frame-Options: DENY`, `frame-ancestors 'none'`), and their buttons read Approve and Deny.
+- `update_content` never changes which languages are active; `locales` in an update payload is ignored. A block id that an earlier update replaced is refused with a request to read the entry again.
 
 ### Fixed
 
@@ -31,7 +34,7 @@ php artisan route:cache   # only if you cache routes
 
 - The migration adds two nullable columns to `mcp_clients`: who approved a connector, and when.
 - Self-service is on by default, so Twill editors can connect apps right after the update. If you published `config/twill-ai.php`, add `'self_service' => env('TWILL_AI_MCP_SELF_SERVICE', true)` and `'allowed_redirect_hosts' => null` to its `mcp` section, or the env variable is never read.
-- Existing connectors and their tokens keep working; the Connectors page lists them as approved by "artisan".
+- Existing connectors and their tokens keep working; the Connectors page lists them as approved by "artisan". Tokens an app got before it was registered, which the endpoint refused in 1.3, are revoked when an editor approves it.
 - If you published the package's views, compare your `mcp/authorize.blade.php` with the package's: the new approval details are only in the package's copy. Its forms are unchanged.
 
 ## 1.3.0 (2026-11-12)

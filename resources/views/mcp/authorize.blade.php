@@ -91,7 +91,7 @@
 
         <p class="notice">
             Only approve an app you are connecting yourself, right now. If you did not
-            just add this connector in your AI app, choose Cancel.
+            just add this connector in your AI app, choose Deny.
         </p>
     </div>
 
@@ -102,7 +102,7 @@
             <input type="hidden" name="state" value="">
             <input type="hidden" name="client_id" value="{{ $client->id }}">
             <input type="hidden" name="auth_token" value="{{ $authToken }}">
-            <button type="submit" class="btn-deny">Cancel</button>
+            <button type="submit" class="btn-deny">Deny</button>
         </form>
 
         <form method="POST" action="{{ $approveUrl ?? route('passport.authorizations.approve') }}" id="authorizeForm">
@@ -115,7 +115,7 @@
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity=".25"></circle>
                     <path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                 </svg>
-                <span id="authorizeText">Authorize</span>
+                <span id="authorizeText">Approve</span>
             </button>
         </form>
     </div>
@@ -130,7 +130,7 @@
 
         form.addEventListener('submit', function () {
             button.disabled = true;
-            authorizeText.textContent = 'Authorizing…';
+            authorizeText.textContent = 'Approving…';
             loadingSpinner.classList.remove('hidden');
         });
     });

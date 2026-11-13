@@ -3,6 +3,7 @@
 use A17\Twill\Models\Enums\UserRole;
 use A17\Twill\Models\User as TwillUser;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Once;
 use Illuminate\Testing\TestResponse;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
@@ -189,9 +190,25 @@ function exchangeAuthorizationCode(string $clientId, string $redirectUri, string
 
     // The approver is still on the CMS guard in this process; the app's next
     // call is a request of its own.
-    Auth::forgetGuards();
+    freshRequestState();
 
     return (string) $token;
+}
+
+/**
+ * Start the next request the way a real server does. A test runs every request
+ * in one process: guards keep their user, Passport keeps its once() lookups,
+ * and routes keep their controller instances, which hold the guard Passport's
+ * AuthorizationController was given.
+ */
+function freshRequestState(): void
+{
+    Auth::forgetGuards();
+    Once::flush();
+
+    foreach (app('router')->getRoutes() as $route) {
+        $route->flushController();
+    }
 }
 
 /**

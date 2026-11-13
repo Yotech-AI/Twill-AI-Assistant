@@ -92,3 +92,16 @@ it('says when self-service is off and any app may connect', function () {
         ->expectsOutputToContain('self-service: off')
         ->expectsOutputToContain('allowed apps: any');
 });
+
+it('lists at most 20 waiting apps, with how many more there are', function () {
+    foreach (range(1, 23) as $i) {
+        test()->postJson('/oauth/register', [
+            'client_name' => "App {$i}",
+            'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
+        ])->assertSuccessful();
+    }
+
+    $this->artisan('mcp:doctor')
+        ->expectsOutputToContain('waiting for approval: 23')
+        ->expectsOutputToContain('and 3 more');
+});

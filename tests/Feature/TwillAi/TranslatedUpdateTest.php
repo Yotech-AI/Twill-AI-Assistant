@@ -200,3 +200,89 @@ it('does not merge a block id that belongs to another entry', function () {
 
     expect(storedBlock($article, 'fixture-text')['heading'])->toBe(['en' => 'Mine EN']);
 });
+
+it('refuses block ids an earlier update replaced, instead of dropping their locales', function () {
+    $article = trilingualDraft();
+    $text = collect(app(ContentSerializer::class)->toPayload('articles', $article->fresh())['blocks']['default'])
+        ->firstWhere('type', 'fixture-text');
+
+    $text['content'] = ['heading' => ['en' => 'New heading EN']];
+    $payload = ['blocks' => ['default' => [$text]]];
+
+    updateArticle($article, $payload);
+
+    // The same call again, as a client retry or a second update built from
+    // the same get_content would make it: that id is gone now.
+    $retry = updateArticle($article, $payload);
+
+    expect($retry)->toContain('get_content')
+        ->and(storedBlock($article, 'fixture-text')['heading'])
+        ->toBe(['en' => 'New heading EN', 'nl' => 'Kop NL', 'de' => 'Kopf DE']);
+});
+
+it('refuses a child block id an earlier update replaced', function () {
+    $article = trilingualDraft();
+    $before = collect(app(ContentSerializer::class)->toPayload('articles', $article->fresh())['blocks']['default'])
+        ->firstWhere('type', 'fixture-faq');
+
+    updateArticle($article, ['blocks' => ['default' => [$before]]]);
+
+    // The block itself as it is now, but its row as it was before.
+    $faq = collect(app(ContentSerializer::class)->toPayload('articles', $article->fresh())['blocks']['default'])
+        ->firstWhere('type', 'fixture-faq');
+    $faq['children']['faq_items'][0]['id'] = $before['children']['faq_items'][0]['id'];
+    $faq['children']['faq_items'][0]['content'] = ['question' => ['en' => 'New Q EN']];
+
+    expect(updateArticle($article, ['blocks' => ['default' => [$faq]]]))->toContain('get_content')
+        ->and(storedBlock($article, 'dynamic-repeater-faq_items')['question'])->toBe(['en' => 'Q EN', 'nl' => 'V NL', 'de' => 'F DE']);
+});
+
+it('does not merge a block id of another kind of block', function () {
+    $article = trilingualDraft();
+
+    $faqId = DB::table('twill_blocks')
+        ->where('blockable_id', $article->id)
+        ->where('type', 'fixture-faq')
+        ->value('id');
+
+    updateArticle($article, ['blocks' => ['default' => [
+        ['id' => $faqId, 'type' => 'fixture-text', 'content' => ['heading' => ['en' => 'Typed EN']]],
+    ]]]);
+
+    expect(storedBlock($article, 'fixture-text'))->toBe(['heading' => ['en' => 'Typed EN']]);
+});
+
+it('keeps every locale of a block field sent as an empty object, as for a field on the entry', function () {
+    $article = trilingualDraft();
+    $blocks = app(ContentSerializer::class)->toPayload('articles', $article->fresh())['blocks']['default'];
+
+    $text = collect($blocks)->search(fn (array $block) => $block['type'] === 'fixture-text');
+    $blocks[$text]['content']['heading'] = (object) [];
+
+    updateArticle($article, ['blocks' => ['default' => $blocks]]);
+
+    expect(storedBlock($article, 'fixture-text')['heading'])
+        ->toBe(['en' => 'Heading EN', 'nl' => 'Kop NL', 'de' => 'Kopf DE']);
+});
+
+it('keeps a stored block field that still has a locale the site no longer uses', function () {
+    $article = trilingualDraft();
+    $blocks = app(ContentSerializer::class)->toPayload('articles', $article->fresh())['blocks']['default'];
+
+    // The site drops German after the draft was written. (The entry's own
+    // German rows go too: an entry still holding them cannot be updated at
+    // all, which is a separate matter.)
+    config()->set('translatable.locales', ['en', 'nl']);
+    app(Locales::class)->load();
+    DB::table('article_translations')->where('article_id', $article->id)->where('locale', 'de')->delete();
+
+    // Only the text block, edited in English; the other blocks would echo
+    // German, which is refused now.
+    $text = collect($blocks)->firstWhere('type', 'fixture-text');
+    $text['content'] = ['heading' => ['en' => 'New heading EN']];
+
+    expect(updateArticle($article, ['blocks' => ['default' => [$text]]]))->toContain('"updated":true');
+
+    expect(storedBlock($article, 'fixture-text')['heading']['nl'] ?? null)->toBe('Kop NL')
+        ->and(storedBlock($article, 'fixture-text')['body']['nl'] ?? null)->toBe('<p>Tekst NL</p>');
+});

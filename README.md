@@ -101,14 +101,16 @@ A Twill user connects the AI app they use, with no server access and no client I
 
 That approval registers the connector. Its drafts are attributed to a Twill user of its own, `<app> (approved by <you>)`, never to you.
 
-Only users who pass Twill's edit gate may approve (publishers, admins and superadmins). A view-only user is asked to get an editor or admin to connect the app, and someone without a Twill account can't get past the login.
+Only users who pass Twill's edit gate may approve (publishers, admins and superadmins). A view-only user is asked to get an editor or admin to connect the app, and someone without a Twill account can't get past the login. With Twill's permission management on, that gate does not exist; approving then takes the global "Edit settings" permission.
+
+Approving also revokes any token the app was given before it was a connector, so access only ever starts with this approval. A connector app that asks on Passport's own `/oauth/authorize` is sent to this screen, so a host's customer login can never approve one.
 
 | Config | Default | |
 |---|---|---|
 | `twill-ai.mcp.self_service` (`TWILL_AI_MCP_SELF_SERVICE`) | `true` | Off, an app works only once a server admin registers it with `mcp:client-create`, as in 1.3. |
 | `twill-ai.mcp.allowed_redirect_hosts` | `null`: any app | The hosts an app's access may go to, e.g. `['claude.ai', 'chatgpt.com']`. An app for another host gets no Approve button. List a desktop app on its own scheme by the scheme, e.g. `cursor`. |
 
-Dynamic client registration (`/oauth/register`) accepts only the redirect URIs OAuth 2.1 allows: https, http on a loopback address (`localhost`, `127.0.0.1`, `[::1]`) for a desktop app, or an app's private-use scheme (that last one needs laravel/mcp 0.9). Anything else is refused with `invalid_redirect_uri`. The endpoint is shared with your application, so while self-service is on this applies to your own MCP server's clients too.
+Dynamic client registration (`/oauth/register`) accepts only the redirect URIs OAuth 2.1 allows: https, http on a loopback address (`localhost`, `127.0.0.1`, `[::1]`) for a desktop app, or an app's private-use scheme. Anything else, a host with characters outside ASCII included, is refused with `invalid_redirect_uri`. Private-use schemes need laravel/mcp 0.9, and if you set `mcp.custom_schemes` yourself, that list decides which ones register. The endpoint is shared with your application, so while self-service is on these rules apply to your own MCP server's clients too.
 
 ### The Connectors page
 
@@ -135,7 +137,7 @@ Token issuing (`/oauth/token`) and dynamic registration (`/oauth/register`) are 
 
 **Upgrading from the old setup.** Earlier versions asked you to set `passport.guard` to `twill_users`. A site that did keeps working: Passport's `/oauth/authorize` still shows the connector's screen there, and new connections go to the connector's own screen. You can set `passport.guard` back to what your application needs; existing connector tokens are unaffected.
 
-Registering a client grants nothing on its own: dynamic client registration lets anyone create one, but a client with no row in `mcp_clients` is refused until a Twill editor approves it (with self-service on) or a server admin registers it with `mcp:client-create`. Only a public client, the kind `/oauth/register` makes, is registered by approving it, so your application's own OAuth clients never become connectors.
+Registering a client grants nothing on its own: dynamic client registration lets anyone create one, but a client with no row in `mcp_clients` is refused until a Twill editor approves it (with self-service on) or a server admin registers it with `mcp:client-create`. Only a public client that no other user provider claimed, the kind `/oauth/register` makes, is registered by approving it. Your application's confidential clients and clients bound to its own providers never become connectors; a client your own MCP server registered is public too, so it would, if an editor approved it on the connector's screen.
 
 ## Safety guarantees
 
@@ -153,7 +155,7 @@ These are enforced in `PayloadBuilder` and the tool list, not in config, and no 
 `update_content`, in the Twill AI chat and over MCP alike, is partial:
 
 - **Translated fields are merged per locale.** A locale the payload leaves out keeps its text, so an update with only `en` leaves `nl` and `de` as they are. A locale sent as `""` or `null` is cleared.
-- **Blocks are rebuilt per editor**, from the full list sent for it. A block sent with the `id` that `get_content` gave it keeps the locales it leaves out, the same way, and so do its children. A block without an id is new, so send every locale for it. Ids change with every update, so read the entry again before the next one.
+- **Blocks are rebuilt per editor**, from the full list sent for it. A block sent with the `id` that `get_content` gave it keeps the locales it leaves out, the same way, and so do its children. A block without an id is new, so send every locale for it. Ids change with every update, so read the entry again before the next one: an id an earlier update replaced is refused, rather than its locales dropped.
 - **Which languages are active stays as it is.** Switching a language on is publishing, so `locales` in an update payload is ignored.
 
 ## The Plugins page

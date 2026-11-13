@@ -353,7 +353,7 @@ class PromptComposer
         2. Call get_module_schema for the module you are writing to, and list_blocks for
            its blocks. Use the names they return EXACTLY — never add or strip a prefix.
         3. Call get_content before update_content and build your change on the structure
-           it returns.
+           it returns, block ids included. Read it again before the next update: the ids change.
         4. Finish by giving the user the returned edit_url so they can review the draft.
 
         # Content shape

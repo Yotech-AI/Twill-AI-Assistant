@@ -2,11 +2,13 @@
 
 namespace TwillAi\Mcp\Http\Controllers;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use TwillAi\Mcp\ConnectorRegistrar;
 use TwillAi\Mcp\Console\RevokeClientCommand;
 use TwillAi\Mcp\Models\McpClient;
@@ -33,7 +35,7 @@ class ConnectorsController extends Controller
             'hosts' => $connectors->mapWithKeys(fn (McpClient $connector) => [
                 $connector->id => self::hostsOf($connector),
             ]),
-            'created' => $request->session()->get('twill-ai.connector-created'),
+            'created' => self::created($request),
             'status' => $request->session()->get('twill-ai.connector-status'),
             'selfService' => SelfService::enabled(),
             'endpoint' => url(trim((string) config('twill-ai.mcp.path', 'mcp/twill'), '/')),
@@ -82,8 +84,33 @@ class ConnectorsController extends Controller
             ->with('twill-ai.connector-created', [
                 'name' => $connector->name,
                 'client_id' => (string) $client->getKey(),
-                'client_secret' => (string) $client->plainSecret,
+                // Encrypted, so the session store never holds it readable,
+                // whatever its driver.
+                'client_secret' => Crypt::encryptString((string) $client->plainSecret),
             ]);
+    }
+
+    /**
+     * The app added on the previous request, its secret decrypted for this
+     * one page.
+     *
+     * @return array{name: string, client_id: string, client_secret: string}|null
+     */
+    protected static function created(Request $request): ?array
+    {
+        $created = $request->session()->get('twill-ai.connector-created');
+
+        if (! is_array($created)) {
+            return null;
+        }
+
+        try {
+            $created['client_secret'] = Crypt::decryptString((string) ($created['client_secret'] ?? ''));
+        } catch (DecryptException) {
+            return null;
+        }
+
+        return $created;
     }
 
     /**

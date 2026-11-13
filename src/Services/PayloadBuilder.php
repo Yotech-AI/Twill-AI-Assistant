@@ -46,6 +46,8 @@ class PayloadBuilder
      */
     protected array $storedBlocks = [];
 
+    protected bool $updating = false;
+
     public function __construct(
         protected ModuleRegistry $registry,
         protected BlockSchemaService $blockSchema,
@@ -59,6 +61,7 @@ class PayloadBuilder
     public function buildForCreate(string $moduleKey, array $payload): array
     {
         $this->storedBlocks = [];
+        $this->updating = false;
 
         $fields = $this->build($moduleKey, $payload, existing: null, freshBlockIds: true);
 
@@ -106,6 +109,7 @@ class PayloadBuilder
         }
 
         $this->storedBlocks = $this->storedBlocksOf($entry);
+        $this->updating = true;
 
         // Which locales are active is the editor's call, like publishing, so
         // an update keeps every locale's active flag whatever the payload
@@ -196,18 +200,46 @@ class PayloadBuilder
         }
 
         foreach ($stored['content'] as $field => $value) {
-            if (! $this->isLocaleMap($value, $locales)) {
+            if (! $this->isStoredLocaleMap($value, $locales)) {
                 continue;
             }
 
+            // {} sends no locale, so every locale keeps its text, as it does
+            // for a translated field on the entry itself.
             if (! array_key_exists($field, $content)) {
                 $content[$field] = $value;
-            } elseif ($this->isLocaleMap($content[$field], $locales)) {
+            } elseif ($content[$field] === [] || $this->isLocaleMap($content[$field], $locales)) {
                 $content[$field] = array_replace($value, $content[$field]);
             }
         }
 
         return $content;
+    }
+
+    /**
+     * Refuse a block id that is no block at all any more. Every update gives
+     * the tree fresh ids, so an id from an earlier read, sent again by a retry
+     * or by a second update built from the same get_content, would otherwise
+     * make that block new and silently drop the locales it does not send.
+     * Another entry's block id is still just ignored.
+     */
+    protected function assertCurrentBlockId(mixed $id, string $path): void
+    {
+        if (! $this->updating || ! (is_int($id) || (is_string($id) && ctype_digit($id)))) {
+            return;
+        }
+
+        $id = (int) $id;
+
+        if ($id >= self::NEW_BLOCK_ID_BASE || isset($this->storedBlocks[$id])) {
+            return;
+        }
+
+        if (twillModel('block')::query()->whereKey($id)->exists()) {
+            return;
+        }
+
+        $this->errors[] = "\"{$path}\" has block id {$id}, which no longer exists: block ids change with every update. Call get_content again and send the ids it returns.";
     }
 
     /**
@@ -219,6 +251,20 @@ class PayloadBuilder
             && $value !== []
             && ! array_is_list($value)
             && array_diff(array_keys($value), $locales) === [];
+    }
+
+    /**
+     * A stored translated value may still hold a locale the site no longer
+     * uses; one of its keys being a current locale is enough.
+     *
+     * @param  array<int, string>  $locales
+     */
+    protected function isStoredLocaleMap(mixed $value, array $locales): bool
+    {
+        return is_array($value)
+            && $value !== []
+            && ! array_is_list($value)
+            && array_intersect(array_keys($value), $locales) !== [];
     }
 
     /**
@@ -728,6 +774,7 @@ class PayloadBuilder
 
         unset($content['browsers']);
         $this->validateBlockContentLocales($content, $locales, $path);
+        $this->assertCurrentBlockId($block['id'] ?? null, $path);
         $content = $this->keepUnsentBlockLocales($content, $block['id'] ?? null, [$type, $component], $locales);
 
         $built = [
@@ -940,6 +987,7 @@ class PayloadBuilder
             $content = is_array($child['content'] ?? null) ? $child['content'] : [];
             unset($content['browsers']);
             $this->validateBlockContentLocales($content, $locales, "{$path}[{$index}]");
+            $this->assertCurrentBlockId($child['id'] ?? null, "{$path}[{$index}]");
             $content = $this->keepUnsentBlockLocales($content, $child['id'] ?? null, [$type, $component], $locales);
 
             $node = [
@@ -996,6 +1044,7 @@ class PayloadBuilder
             $content = is_array($child['content'] ?? null) ? $child['content'] : [];
             unset($content['browsers']);
             $this->validateBlockContentLocales($content, $locales, "{$path}[{$index}]");
+            $this->assertCurrentBlockId($child['id'] ?? null, "{$path}[{$index}]");
             $content = $this->keepUnsentBlockLocales($content, $child['id'] ?? null, [$component, $childKey, 'dynamic-repeater-'.$childKey], $locales);
 
             $node = [

@@ -13,7 +13,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 use TwillAi\Mcp\ConnectorRegistrar;
 use TwillAi\Mcp\Models\McpClient;
-use TwillAi\Mcp\RedirectUri;
 use TwillAi\Mcp\SelfService;
 
 /**
@@ -49,7 +48,7 @@ class ConnectorApprovalController extends ApproveAuthorizationController
         if (! SelfService::mayApprove($approver)) {
             $request->session()->forget(['authToken', 'authRequest']);
 
-            return ConnectorAuthorizationController::refusal(null, null, 'Ask a Twill editor or admin to connect this app.');
+            return ConnectorAuthorizationController::refusalFor($approver, null, null);
         }
 
         $authRequest = $this->pendingAuthRequest($request);
@@ -63,14 +62,16 @@ class ConnectorApprovalController extends ApproveAuthorizationController
         $redirectUri = $authRequest->getRedirectUri()
             ?? ($client === null ? null : ConnectorAuthorizationController::redirectUriFor($client, null));
 
-        if ($redirectUri !== null && ! SelfService::allowsRedirectTo($redirectUri)) {
+        $refusal = ConnectorAuthorizationController::refusalFor(
+            $approver,
+            $client === null ? null : ConnectorRegistrar::appName($client),
+            $redirectUri,
+        );
+
+        if ($refusal !== null) {
             $request->session()->forget(['authToken', 'authRequest']);
 
-            return ConnectorAuthorizationController::refusal(
-                $client === null ? null : ConnectorRegistrar::appName($client),
-                RedirectUri::host($redirectUri),
-                'This app is not allowed on this site: it sends its access to '.RedirectUri::host($redirectUri).', which the site does not list.',
-            );
+            return $refusal;
         }
 
         if ($client !== null

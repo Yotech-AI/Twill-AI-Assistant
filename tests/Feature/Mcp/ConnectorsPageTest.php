@@ -141,3 +141,33 @@ it('links the Connectors page from the Twill AI page, for users who may approve'
     expect(aiPageUrls(pageEditor()))->toHaveKey('connectors', route('twill.ai.connectors.index'))
         ->and(aiPageUrls(twillAdmin('viewer@example.test', 'VIEWONLY')))->not->toHaveKey('connectors');
 });
+
+it('leaves adding apps to server admins when self-service is off', function () {
+    config()->set('twill-ai.mcp.self_service', false);
+
+    test()->actingAs(pageEditor(), 'twill_users')
+        ->post(route('twill.ai.connectors.store'), [
+            'name' => 'Le Chat',
+            'redirect_uris' => 'https://chat.mistral.ai/connector/callback',
+        ])
+        ->assertForbidden();
+
+    expect(McpClient::query()->count())->toBe(0);
+});
+
+it('never keeps the secret readable in the session', function () {
+    $editor = pageEditor();
+
+    test()->actingAs($editor, 'twill_users')->post(route('twill.ai.connectors.store'), [
+        'name' => 'Le Chat',
+        'redirect_uris' => 'https://chat.mistral.ai/connector/callback',
+    ]);
+
+    $session = json_encode(session()->all());
+    $page = (string) test()->actingAs($editor, 'twill_users')->get(connectorsPage())->getContent();
+
+    preg_match('/data-client-secret>([^<]+)</', $page, $match);
+
+    expect(trim($match[1] ?? ''))->not->toBe('')
+        ->and($session)->not->toContain(trim($match[1]));
+});

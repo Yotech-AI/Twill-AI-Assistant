@@ -27,7 +27,9 @@ class ValidateClientRegistration
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! SelfService::enabled() || ! $request->isMethod('POST') || trim($request->path(), '/') !== 'oauth/register') {
+        // The decoded path, as the router matches it: /oauth/%72egister is
+        // the same route.
+        if (! SelfService::enabled() || ! $request->isMethod('POST') || trim($request->decodedPath(), '/') !== 'oauth/register') {
             return $next($request);
         }
 
@@ -61,13 +63,12 @@ class ValidateClientRegistration
 
         // laravel/mcp 0.9 refuses every scheme but http and https unless
         // mcp.custom_schemes lists it. The ones that got this far are the
-        // private-use schemes OAuth 2.1 allows, so this registration may use
-        // them. (0.5 has no such list; its url rule refuses them regardless.)
-        if ($schemes !== []) {
-            config(['mcp.custom_schemes' => array_values(array_unique([
-                ...(array) config('mcp.custom_schemes', []),
-                ...$schemes,
-            ]))]);
+        // private-use schemes OAuth 2.1 allows, so a registration may use
+        // them, unless the host keeps a list of its own: then that list
+        // decides, for the connector's apps as for its own. (0.5 has no such
+        // list; its url rule refuses them regardless.)
+        if ($schemes !== [] && (array) config('mcp.custom_schemes', []) === []) {
+            config(['mcp.custom_schemes' => array_values(array_unique($schemes))]);
         }
 
         return $next($request);

@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
+use TwillAi\Mcp\Http\Controllers\ConnectorAuthorizationController;
 use TwillAi\Mcp\SelfService;
 
 /**
@@ -20,11 +21,11 @@ class RequireConnectorApprover
             return $next($request);
         }
 
-        return response()->view('twill-ai::mcp.refused', [
-            'title' => 'Connectors',
-            'appName' => null,
-            'appHost' => null,
-            'message' => 'Only Twill editors and admins can manage connectors. Ask a Twill editor or admin.',
-        ], 403);
+        return ConnectorAuthorizationController::refusal(
+            null,
+            null,
+            'Only Twill editors and admins can manage connectors. Ask a Twill editor or admin.',
+            'Connectors',
+        );
     }
 }
