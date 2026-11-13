@@ -62,15 +62,18 @@ The approval screen sits behind the **CMS** login, not the customer login
 reports: `--redirect=https://…`.
 
 **If Cowork registers itself instead** (leaving the id and secret blank uses
-dynamic client registration), its requests are refused until you allow-list it:
+dynamic client registration), approving it registers it, as long as
+`twill-ai.mcp.self_service` is on (the default) and the approver passes
+Twill's edit gate. That is the usual way in: any AI app, with only the URL.
+With self-service off, its requests are refused until you allow-list it:
 
 ```bash
 php artisan mcp:client-list --pending
 php artisan mcp:client-create "Claude Cowork" --oauth-client=<id>
 ```
 
-That refusal is deliberate. Passport's registration endpoint is public, so
-self-registration on its own must not grant access.
+Either way, registering alone grants nothing. Passport's registration endpoint
+is public, so access starts at an approval by someone who may change content.
 
 ## If credentials leak
 
@@ -78,7 +81,7 @@ self-registration on its own must not grant access.
 php artisan mcp:client-revoke <id>
 ```
 
-Revocation is immediate — Passport checks the revoked flag on every request, so
+or **Revoke** on the Connectors page in Twill. Revocation is immediate — Passport checks the revoked flag on every request, so
 the connector's next call gets a 401 rather than working until expiry. Add
 `--delete` to revoke the OAuth client too, so it cannot be re-approved. Then
 create a fresh connector and re-add it. Anyone completing the approval flow can
@@ -93,7 +96,10 @@ all eight tools resolve, and every client with its token count and attribution.
 | Symptom | Likely cause |
 |---|---|
 | `401` on every call | Token expired, revoked, or the connector was never approved |
-| `403` mentioning a registered connector | The OAuth client self-registered and is not allow-listed — see above |
+| `403` mentioning a registered connector | The app registered itself and was approved with self-service off, or on Passport's own `/oauth/authorize` — see above |
+| Approval screen says to ask a Twill editor or admin | The user is view-only. Approving takes Twill's edit gate |
+| Approval screen says the app is not allowed on this site | Its redirect host is not in `twill-ai.mcp.allowed_redirect_hosts` |
+| `invalid_redirect_uri` when the app registers | Its redirect URI is not https, http on a loopback address, or a private-use scheme |
 | `403` mentioning attribution | Connector has no linked Twill user — re-create it |
 | `403` mentioning HTTPS | Connector pointed at `http://`, or a proxy not forwarding the scheme |
 | Approval page redirects to the customer login | Claude was sent to Passport's `/oauth/authorize` instead of the connector's own screen. Run `mcp:doctor`: its `chain` line names the broken link |

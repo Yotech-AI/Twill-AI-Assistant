@@ -85,11 +85,41 @@ composer require laravel/mcp "laravel/passport:^13.7.1"
 
 Then set `TWILL_AI_MCP_ENABLED=true` and:
 
-1. `php artisan passport:keys`
-2. Point `twill.models.user` at a user model that implements `Laravel\Passport\Contracts\OAuthenticatable` — either `TwillAi\Models\TwillUser`, or add `TwillAi\Concerns\ActsAsOAuthUser` to your own Twill user subclass.
-3. `php artisan mcp:client-create` to register a connector and the Twill user its drafts are attributed to.
+1. `php artisan migrate`
+2. `php artisan passport:keys`
+3. Point `twill.models.user` at a user model that implements `Laravel\Passport\Contracts\OAuthenticatable` — either `TwillAi\Models\TwillUser`, or add `TwillAi\Concerns\ActsAsOAuthUser` to your own Twill user subclass.
 
-`php artisan twill-ai:doctor` verifies the setup, and `php artisan mcp:doctor` follows the whole sign-in chain the way Claude does. The connector authenticates on its own `twill-mcp` guard rather than claiming `api`, which in most applications belongs to Sanctum.
+That is all a server needs: Twill users connect their own AI apps from there. `php artisan twill-ai:doctor` verifies the setup, and `php artisan mcp:doctor` follows the whole sign-in chain the way Claude does. The connector authenticates on its own `twill-mcp` guard rather than claiming `api`, which in most applications belongs to Sanctum.
+
+### Connect an AI app
+
+A Twill user connects the AI app they use, with no server access and no client ID or secret:
+
+1. In the app, add a custom connector (an MCP server) with only the URL `https://<your-site>/mcp/twill`. Claude, ChatGPT and Mistral Le Chat all take just the URL, as does any MCP client that supports OAuth.
+2. The app sends you to the site. Log in to Twill if you aren't already; you come back to the same screen.
+3. The screen shows the name the app gave itself, where its access goes (`claude.ai`, `chatgpt.com`, `chat.mistral.ai`, or `localhost` for a desktop app) and what it may do: create and edit drafts, never publish or delete. Choose Approve.
+
+That approval registers the connector. Its drafts are attributed to a Twill user of its own, `<app> (approved by <you>)`, never to you.
+
+Only users who pass Twill's edit gate may approve (publishers, admins and superadmins). A view-only user is asked to get an editor or admin to connect the app, and someone without a Twill account can't get past the login.
+
+| Config | Default | |
+|---|---|---|
+| `twill-ai.mcp.self_service` (`TWILL_AI_MCP_SELF_SERVICE`) | `true` | Off, an app works only once a server admin registers it with `mcp:client-create`, as in 1.3. |
+| `twill-ai.mcp.allowed_redirect_hosts` | `null`: any app | The hosts an app's access may go to, e.g. `['claude.ai', 'chatgpt.com']`. An app for another host gets no Approve button. List a desktop app on its own scheme by the scheme, e.g. `cursor`. |
+
+Dynamic client registration (`/oauth/register`) accepts only the redirect URIs OAuth 2.1 allows: https, http on a loopback address (`localhost`, `127.0.0.1`, `[::1]`) for a desktop app, or an app's private-use scheme (that last one needs laravel/mcp 0.9). Anything else is refused with `invalid_redirect_uri`. The endpoint is shared with your application, so while self-service is on this applies to your own MCP server's clients too.
+
+### The Connectors page
+
+**Twill AI → Connectors** (`/<admin path>/ai/connectors`), for users who may approve, lists every connector: its name, the host its access goes to, who approved it and when (or "artisan"), when it was last used, and its live tokens.
+
+- **Revoke** does what `mcp:client-revoke` does: the app's tokens stop working at once, and it can only connect again through a new approval.
+- **Add an app by hand** is for an app that can't register itself. Give it a name and its redirect URI(s), and the page shows its client ID and secret, once. The app then asks for approval like any other.
+
+### For server admins
+
+`php artisan mcp:client-create "<name>"` still registers a connector from the command line and prints its client ID and secret once; with self-service off it is the only way in. `mcp:client-list` and `mcp:client-revoke` list connectors and cut them off, and `mcp:doctor` shows self-service, the allowed apps and the apps waiting for approval.
 
 ### Its own sign-in, beside yours
 
@@ -105,7 +135,7 @@ Token issuing (`/oauth/token`) and dynamic registration (`/oauth/register`) are 
 
 **Upgrading from the old setup.** Earlier versions asked you to set `passport.guard` to `twill_users`. A site that did keeps working: Passport's `/oauth/authorize` still shows the connector's screen there, and new connections go to the connector's own screen. You can set `passport.guard` back to what your application needs; existing connector tokens are unaffected.
 
-Registering a client is what grants access: OAuth dynamic client registration lets anyone create a client, but a client with no row in `mcp_clients` is refused.
+Registering a client grants nothing on its own: dynamic client registration lets anyone create one, but a client with no row in `mcp_clients` is refused until a Twill editor approves it (with self-service on) or a server admin registers it with `mcp:client-create`. Only a public client, the kind `/oauth/register` makes, is registered by approving it, so your application's own OAuth clients never become connectors.
 
 ## Safety guarantees
 
@@ -117,6 +147,14 @@ These are enforced in `PayloadBuilder` and the tool list, not in config, and no 
 - **Field whitelist.** Non-translated columns not in `extra_fields` are stripped from agent payloads.
 
 `allow_updating_published` only controls whether the agent may edit an entry a human already published; it still cannot alter its publish state. It ships as `null` — see [SEO Suite integration](#seo-suite-integration-optional) — and `false` pins it closed.
+
+### Updates change only what they send
+
+`update_content`, in the Twill AI chat and over MCP alike, is partial:
+
+- **Translated fields are merged per locale.** A locale the payload leaves out keeps its text, so an update with only `en` leaves `nl` and `de` as they are. A locale sent as `""` or `null` is cleared.
+- **Blocks are rebuilt per editor**, from the full list sent for it. A block sent with the `id` that `get_content` gave it keeps the locales it leaves out, the same way, and so do its children. A block without an id is new, so send every locale for it. Ids change with every update, so read the entry again before the next one.
+- **Which languages are active stays as it is.** Switching a language on is publishing, so `locales` in an update payload is ignored.
 
 ## The Plugins page
 
@@ -162,7 +200,7 @@ Two things hold regardless. The agent still cannot change any entry's publish st
 | `twill-ai:install` | Publish the config and report the remaining setup steps. |
 | `twill-ai:doctor` | Diagnose block registration, host wiring, the API key, queue, SEO and MCP setup. |
 | `twill-ai:refresh-models` | Refresh the provider's model list for the picker. |
-| `mcp:client-create` / `mcp:client-list` / `mcp:client-revoke` | Manage MCP connectors. |
+| `mcp:client-create` / `mcp:client-list` / `mcp:client-revoke` | Manage MCP connectors from the command line. The Connectors page in Twill does the same for editors. |
 | `mcp:doctor` | Diagnose the MCP endpoint, its tools and its clients. |
 
 ## Frontend assets
