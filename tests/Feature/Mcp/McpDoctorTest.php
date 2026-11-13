@@ -69,3 +69,39 @@ it('follows the chain on the site\'s own host, not localhost', function () {
         ->expectsOutputToContain('401 → resource document → issuer → CMS approval screen')
         ->doesntExpectOutputToContain('BROKEN');
 });
+
+it('shows self-service, the apps the site allows and the apps waiting for approval', function () {
+    config()->set('twill-ai.mcp.allowed_redirect_hosts', ['claude.ai', 'chatgpt.com']);
+
+    test()->postJson('/oauth/register', [
+        'client_name' => 'Le Chat',
+        'redirect_uris' => ['https://chat.mistral.ai/connector/callback'],
+    ])->assertSuccessful();
+
+    $this->artisan('mcp:doctor')
+        ->expectsOutputToContain('self-service: on')
+        ->expectsOutputToContain('allowed apps: claude.ai, chatgpt.com')
+        ->expectsOutputToContain('waiting for approval: 1')
+        ->expectsOutputToContain('Le Chat → chat.mistral.ai');
+});
+
+it('says when self-service is off and any app may connect', function () {
+    config()->set('twill-ai.mcp.self_service', false);
+
+    $this->artisan('mcp:doctor')
+        ->expectsOutputToContain('self-service: off')
+        ->expectsOutputToContain('allowed apps: any');
+});
+
+it('lists at most 20 waiting apps, with how many more there are', function () {
+    foreach (range(1, 23) as $i) {
+        test()->postJson('/oauth/register', [
+            'client_name' => "App {$i}",
+            'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
+        ])->assertSuccessful();
+    }
+
+    $this->artisan('mcp:doctor')
+        ->expectsOutputToContain('waiting for approval: 23')
+        ->expectsOutputToContain('and 3 more');
+});

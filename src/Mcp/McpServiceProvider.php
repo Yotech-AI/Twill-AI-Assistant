@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use TwillAi\Mcp\Http\Controllers\ConnectorAuthorizationController;
+use TwillAi\Mcp\Http\Middleware\GuardPassportAuthorization;
 use TwillAi\Mcp\Http\Middleware\ServeConnectorDiscovery;
+use TwillAi\Mcp\Http\Middleware\ValidateClientRegistration;
 
 /**
  * Keeps the MCP integration self-contained.
@@ -36,6 +38,8 @@ class McpServiceProvider extends ServiceProvider
     {
         $this->registerServers();
         $this->registerDiscovery();
+        $this->registerClientRegistrationRules();
+        $this->registerPassportScreenGuard();
         $this->registerLegacyAuthorizationScreen();
         $this->registerApproverLoginRedirect();
 
@@ -73,6 +77,25 @@ class McpServiceProvider extends ServiceProvider
     }
 
     /**
+     * Refuse a dynamic client registration OAuth 2.1 does not allow, before
+     * laravel/mcp takes it. ValidateClientRegistration explains why this is
+     * global middleware too.
+     */
+    protected function registerClientRegistrationRules(): void
+    {
+        $this->app->make(HttpKernel::class)->prependMiddleware(ValidateClientRegistration::class);
+    }
+
+    /**
+     * Send a connector client that asks on Passport's own /oauth/authorize to
+     * the connector's screen. GuardPassportAuthorization explains why.
+     */
+    protected function registerPassportScreenGuard(): void
+    {
+        $this->app->make(HttpKernel::class)->prependMiddleware(GuardPassportAuthorization::class);
+    }
+
+    /**
      * Passport's global approval screen, for hosts on the old setup only.
      *
      * Before the connector had its own approval routes, a host set
@@ -81,6 +104,10 @@ class McpServiceProvider extends ServiceProvider
      * sent to the connector's own screen instead, so the global view is only
      * replaced where Passport's /oauth/authorize is already a CMS screen. A
      * host whose passport.guard serves its customers keeps its own view.
+     *
+     * Being a CMS screen, it takes the connector screen's self-service checks
+     * too: the edit gate and the allowed hosts. Passport has stored the
+     * request in the session by now, so a refusal forgets it again.
      */
     protected function registerLegacyAuthorizationScreen(): void
     {
@@ -88,9 +115,24 @@ class McpServiceProvider extends ServiceProvider
             return;
         }
 
-        Passport::authorizationView(
-            fn (array $parameters) => view('twill-ai::mcp.authorize', $parameters)
-        );
+        Passport::authorizationView(function (array $parameters) {
+            if (SelfService::enabled()) {
+                $refusal = ConnectorAuthorizationController::refusalFor(
+                    $parameters['user'],
+                    ConnectorRegistrar::appName($parameters['client']),
+                    ConnectorAuthorizationController::redirectUriFor($parameters['client'], $parameters['request']->query('redirect_uri')),
+                );
+
+                if ($refusal !== null) {
+                    $parameters['request']->session()->forget(['authToken', 'authRequest']);
+
+                    return $refusal;
+                }
+            }
+
+            return response()->view('twill-ai::mcp.authorize', $parameters)
+                ->withHeaders(ConnectorAuthorizationController::FRAMING_HEADERS);
+        });
     }
 
     /**

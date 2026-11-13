@@ -38,6 +38,16 @@ class PayloadBuilder
      */
     protected bool $useFreshBlockIds = false;
 
+    /**
+     * The entry's stored blocks by id, on an update only, so a block the
+     * payload sends with its id can keep the locales it does not send.
+     *
+     * @var array<int, array{type: string, child_key: ?string, content: array<string, mixed>}>
+     */
+    protected array $storedBlocks = [];
+
+    protected bool $updating = false;
+
     public function __construct(
         protected ModuleRegistry $registry,
         protected BlockSchemaService $blockSchema,
@@ -50,6 +60,9 @@ class PayloadBuilder
      */
     public function buildForCreate(string $moduleKey, array $payload): array
     {
+        $this->storedBlocks = [];
+        $this->updating = false;
+
         $fields = $this->build($moduleKey, $payload, existing: null, freshBlockIds: true);
 
         // The one rule that can never be broken: the agent only creates drafts.
@@ -70,14 +83,14 @@ class PayloadBuilder
         $this->assertOnlyKnownSections($payload);
 
         $current = $this->serializer->toPayload($moduleKey, $entry);
+        $translated = $this->registry->modelInstance($moduleKey)->translatedAttributes ?? [];
 
-        // Always re-send fields/locales plus the cheap id-array relations
-        // (browsers, sync): Twill's handlers wipe these when absent, and
-        // re-sending current state merged with the agent's changes keeps the
-        // untouched ones intact (idempotent — no churn).
+        // Always re-send fields plus the cheap id-array relations (browsers,
+        // sync): Twill's handlers wipe these when absent, and re-sending
+        // current state merged with the agent's changes keeps the untouched
+        // ones intact (idempotent — no churn).
         $merged = [
-            'fields' => array_merge($current['fields'], Arr::get($payload, 'fields', [])),
-            'locales' => Arr::get($payload, 'locales', $current['locales']),
+            'fields' => array_merge($current['fields'], $this->keepUnsentLocales(Arr::get($payload, 'fields', []), $current['fields'], $translated)),
             'browsers' => array_merge($current['browsers'], Arr::get($payload, 'browsers', [])),
             'sync' => array_merge($current['sync'], Arr::get($payload, 'sync', [])),
         ];
@@ -95,7 +108,14 @@ class PayloadBuilder
             $merged['medias'] = array_merge($current['medias'], $payload['medias']);
         }
 
-        $fields = $this->build($moduleKey, $merged, existing: $entry, freshBlockIds: true);
+        $this->storedBlocks = $this->storedBlocksOf($entry);
+        $this->updating = true;
+
+        // Which locales are active is the editor's call, like publishing, so
+        // an update keeps every locale's active flag whatever the payload
+        // says: an echoed "locales" from get_content or a create example
+        // must not switch a language on or off.
+        $fields = $this->build($moduleKey, $merged, existing: $entry, freshBlockIds: true, activeLocales: $current['locales']);
 
         // Updates never touch the publish state.
         unset($fields['published']);
@@ -119,10 +139,140 @@ class PayloadBuilder
     }
 
     /**
-     * @param  array<string, mixed>  $payload
+     * A translated field keeps the stored value of every locale the payload
+     * does not send. Twill fills a missing locale with null, so without this
+     * an English-only update wiped every other language. A locale sent as
+     * null or "" is still cleared.
+     *
+     * @param  array<string, mixed>  $stored
+     * @param  array<int, string>  $translated
+     */
+    protected function keepUnsentLocales(mixed $sent, array $stored, array $translated): mixed
+    {
+        if (! is_array($sent)) {
+            return $sent;
+        }
+
+        foreach ($sent as $name => $value) {
+            if (in_array($name, $translated, true) && is_array($value) && is_array($stored[$name] ?? null)) {
+                $sent[$name] = array_replace($stored[$name], $value);
+            }
+        }
+
+        return $sent;
+    }
+
+    /**
+     * @return array<int, array{type: string, child_key: ?string, content: array<string, mixed>}>
+     */
+    protected function storedBlocksOf(TwillModelContract $entry): array
+    {
+        if (! method_exists($entry, 'blocks')) {
+            return [];
+        }
+
+        return $entry->blocks()->get()->mapWithKeys(fn ($block) => [(int) $block->id => [
+            'type' => (string) $block->type,
+            'child_key' => $block->child_key,
+            'content' => (array) $block->content,
+        ]])->all();
+    }
+
+    /**
+     * The block counterpart of keepUnsentLocales(), for a block the payload
+     * sends with the id get_content gave it. Only this entry's own blocks of
+     * the same kind match; anything else is a new block and gets only what it
+     * sends. A translated field the block leaves out keeps all its locales.
+     *
+     * @param  array<string, mixed>  $content
+     * @param  array<int, string>  $kinds  stored block types this node may match
+     * @param  array<int, string>  $locales
      * @return array<string, mixed>
      */
-    protected function build(string $moduleKey, array $payload, ?TwillModelContract $existing, bool $freshBlockIds = false): array
+    protected function keepUnsentBlockLocales(array $content, mixed $id, array $kinds, array $locales): array
+    {
+        $stored = is_int($id) || (is_string($id) && ctype_digit($id))
+            ? ($this->storedBlocks[(int) $id] ?? null)
+            : null;
+
+        if ($stored === null || ! in_array($stored['type'], $kinds, true)) {
+            return $content;
+        }
+
+        foreach ($stored['content'] as $field => $value) {
+            if (! $this->isStoredLocaleMap($value, $locales)) {
+                continue;
+            }
+
+            // {} sends no locale, so every locale keeps its text, as it does
+            // for a translated field on the entry itself.
+            if (! array_key_exists($field, $content)) {
+                $content[$field] = $value;
+            } elseif ($content[$field] === [] || $this->isLocaleMap($content[$field], $locales)) {
+                $content[$field] = array_replace($value, $content[$field]);
+            }
+        }
+
+        return $content;
+    }
+
+    /**
+     * Refuse a block id that is no block at all any more. Every update gives
+     * the tree fresh ids, so an id from an earlier read, sent again by a retry
+     * or by a second update built from the same get_content, would otherwise
+     * make that block new and silently drop the locales it does not send.
+     * Another entry's block id is still just ignored.
+     */
+    protected function assertCurrentBlockId(mixed $id, string $path): void
+    {
+        if (! $this->updating || ! (is_int($id) || (is_string($id) && ctype_digit($id)))) {
+            return;
+        }
+
+        $id = (int) $id;
+
+        if ($id >= self::NEW_BLOCK_ID_BASE || isset($this->storedBlocks[$id])) {
+            return;
+        }
+
+        if (twillModel('block')::query()->whereKey($id)->exists()) {
+            return;
+        }
+
+        $this->errors[] = "\"{$path}\" has block id {$id}, which no longer exists: block ids change with every update. Call get_content again and send the ids it returns.";
+    }
+
+    /**
+     * @param  array<int, string>  $locales
+     */
+    protected function isLocaleMap(mixed $value, array $locales): bool
+    {
+        return is_array($value)
+            && $value !== []
+            && ! array_is_list($value)
+            && array_diff(array_keys($value), $locales) === [];
+    }
+
+    /**
+     * A stored translated value may still hold a locale the site no longer
+     * uses; one of its keys being a current locale is enough.
+     *
+     * @param  array<int, string>  $locales
+     */
+    protected function isStoredLocaleMap(mixed $value, array $locales): bool
+    {
+        return is_array($value)
+            && $value !== []
+            && ! array_is_list($value)
+            && array_intersect(array_keys($value), $locales) !== [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, string>|null  $activeLocales  kept as given instead of read from the payload
+     * @return array<string, mixed>
+     */
+    protected function build(string $moduleKey, array $payload, ?TwillModelContract $existing, bool $freshBlockIds = false, ?array $activeLocales = null): array
     {
         $this->errors = [];
         $this->blockIdSequence = 0;
@@ -137,7 +287,7 @@ class PayloadBuilder
 
         $fields = [];
 
-        $activeLocales = $this->resolveActiveLocales($payload, $locales);
+        $activeLocales ??= $this->resolveActiveLocales($payload, $locales);
 
         $this->applyFields($fields, $payload, $model, $config, $locales);
 
@@ -624,6 +774,8 @@ class PayloadBuilder
 
         unset($content['browsers']);
         $this->validateBlockContentLocales($content, $locales, $path);
+        $this->assertCurrentBlockId($block['id'] ?? null, $path);
+        $content = $this->keepUnsentBlockLocales($content, $block['id'] ?? null, [$type, $component], $locales);
 
         $built = [
             'id' => $this->resolveBlockId($block['id'] ?? null, $existingBlockIds, $path),
@@ -835,6 +987,8 @@ class PayloadBuilder
             $content = is_array($child['content'] ?? null) ? $child['content'] : [];
             unset($content['browsers']);
             $this->validateBlockContentLocales($content, $locales, "{$path}[{$index}]");
+            $this->assertCurrentBlockId($child['id'] ?? null, "{$path}[{$index}]");
+            $content = $this->keepUnsentBlockLocales($content, $child['id'] ?? null, [$type, $component], $locales);
 
             $node = [
                 'id' => $this->resolveBlockId($child['id'] ?? null, $existingBlockIds, "{$path}[{$index}]"),
@@ -890,6 +1044,8 @@ class PayloadBuilder
             $content = is_array($child['content'] ?? null) ? $child['content'] : [];
             unset($content['browsers']);
             $this->validateBlockContentLocales($content, $locales, "{$path}[{$index}]");
+            $this->assertCurrentBlockId($child['id'] ?? null, "{$path}[{$index}]");
+            $content = $this->keepUnsentBlockLocales($content, $child['id'] ?? null, [$component, $childKey, 'dynamic-repeater-'.$childKey], $locales);
 
             $node = [
                 'id' => $this->resolveBlockId($child['id'] ?? null, $existingBlockIds, "{$path}[{$index}]"),

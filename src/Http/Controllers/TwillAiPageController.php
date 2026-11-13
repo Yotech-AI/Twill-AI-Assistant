@@ -4,6 +4,8 @@ namespace TwillAi\Http\Controllers;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Route;
+use TwillAi\Mcp\SelfService;
 use TwillAi\Services\ChatService;
 
 class TwillAiPageController extends Controller
@@ -50,7 +52,7 @@ class TwillAiPageController extends Controller
     {
         $prefix = config('twill.admin_route_name_prefix', 'twill.').'ai.';
 
-        return [
+        $urls = [
             'page' => route($prefix.'index'),
             'bootstrap' => route($prefix.'bootstrap'),
             'chats' => route($prefix.'chats.index'),
@@ -58,5 +60,13 @@ class TwillAiPageController extends Controller
             'files' => route($prefix.'files.index'),
             'settings' => route($prefix.'settings.index'),
         ];
+
+        // The Connectors page exists only with the MCP connector on, and is
+        // only for users who may approve one.
+        if (Route::has($prefix.'connectors.index') && SelfService::mayApprove(auth('twill_users')->user())) {
+            $urls['connectors'] = route($prefix.'connectors.index');
+        }
+
+        return $urls;
     }
 }

@@ -156,6 +156,30 @@ it('updates an entry without dropping its blocks', function () {
         ->and((bool) $article->published)->toBeFalse();
 });
 
+it('keeps the locales an MCP update does not send', function () {
+    TwillContentServer::tool(CreateContent::class, [
+        'module' => 'articles',
+        'payload' => json_encode([
+            'fields' => ['title' => ['en' => 'Before', 'nl' => 'Voor']],
+            'locales' => ['en', 'nl'],
+        ]),
+        'external_ref' => 'locales-001',
+    ])->assertHasNoErrors();
+
+    $article = Article::first();
+
+    TwillContentServer::tool(UpdateContent::class, [
+        'module' => 'articles',
+        'id' => $article->id,
+        'payload' => json_encode(['fields' => ['title' => ['en' => 'After']]]),
+    ])->assertOk()->assertHasNoErrors();
+
+    $article->refresh();
+
+    expect($article->getTranslation('en')->title)->toBe('After')
+        ->and($article->getTranslation('nl')->title)->toBe('Voor');
+});
+
 it('reports a failed create as an MCP error rather than a success', function () {
     TwillContentServer::tool(CreateContent::class, [
         'module' => 'no_such_module',

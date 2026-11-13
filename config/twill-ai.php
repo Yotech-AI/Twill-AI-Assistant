@@ -253,6 +253,20 @@ return [
         // clients keep their own approval screen and passport.guard.
         'oauth_prefix' => 'twill-ai/oauth',
 
+        // Self-service connectors. A Twill user adds a connector in their AI
+        // app (Claude, ChatGPT, Le Chat or any MCP client) with only the
+        // endpoint URL; the app registers itself, and approving it in the CMS
+        // registers the connector. Only users who pass Twill's edit gate may
+        // approve. Off, an app must first be registered with
+        // `php artisan mcp:client-create`, as in 1.3.
+        'self_service' => env('TWILL_AI_MCP_SELF_SERVICE', true),
+
+        // Hosts an app's redirect URI may point at, e.g. ['claude.ai',
+        // 'chatgpt.com', 'chat.mistral.ai', 'localhost']. null lets any app
+        // connect. A desktop app on a private-use scheme is listed by its
+        // scheme, e.g. 'cursor'.
+        'allowed_redirect_hosts' => null,
+
         // Rate limit for the remote endpoint, matching the in-admin chat.
         'throttle' => '30,1',
     ],

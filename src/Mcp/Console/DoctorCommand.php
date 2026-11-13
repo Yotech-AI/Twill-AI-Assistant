@@ -5,12 +5,16 @@ namespace TwillAi\Mcp\Console;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Client;
 use Laravel\Passport\Token;
 use Throwable;
+use TwillAi\Mcp\ConnectorRegistrar;
 use TwillAi\Mcp\Http\Middleware\ServeConnectorDiscovery;
 use TwillAi\Mcp\Models\McpClient;
+use TwillAi\Mcp\RedirectUri;
+use TwillAi\Mcp\SelfService;
 use TwillAi\Mcp\Servers\TwillContentServer;
 
 /**
@@ -119,13 +123,8 @@ class DoctorCommand extends Command
             }
         }
 
-        $unregistered = $this->unregisteredClientCount();
-
-        if ($unregistered > 0) {
-            $this->newLine();
-            $this->warn("  {$unregistered} OAuth client(s) registered themselves but are not allow-listed, so they are refused.");
-            $this->line('  Inspect them with: php artisan mcp:client-list --pending');
-        }
+        $this->newLine();
+        $this->checkSelfService();
 
         $this->newLine();
         $this->line('Block registry is the other common server-side failure: run twill-ai:doctor for that.');
@@ -231,12 +230,71 @@ class DoctorCommand extends Command
             ->count();
     }
 
-    protected function unregisteredClientCount(): int
+    /**
+     * Self-service, the apps the site allows, and the apps that registered
+     * themselves: with self-service on they wait for a Twill editor's
+     * approval, with it off they are refused until mcp:client-create adopts
+     * them.
+     */
+    protected function checkSelfService(): void
+    {
+        $hosts = SelfService::allowedHosts();
+        $unregistered = $this->unregisteredClients();
+
+        $this->line('  self-service: '.(SelfService::enabled()
+            ? 'on (a Twill editor or admin approves an app that registered itself)'
+            : 'off (an app needs php artisan mcp:client-create first)'));
+        $this->line('  allowed apps: '.($hosts === null ? 'any' : (implode(', ', $hosts) ?: 'none')));
+
+        if (! SelfService::enabled()) {
+            if ($unregistered->isNotEmpty()) {
+                $this->warn("  {$unregistered->count()} OAuth client(s) registered themselves but are not allow-listed, so they are refused.");
+                $this->line('  Inspect them with: php artisan mcp:client-list --pending');
+            }
+
+            return;
+        }
+
+        $waiting = $unregistered
+            ->filter(fn (Client $client) => ! $client->revoked && ConnectorRegistrar::canSelfRegister($client))
+            ->values();
+
+        $this->line('  waiting for approval: '.$waiting->count());
+
+        foreach ($waiting->take(20) as $client) {
+            $hostsOfClient = array_values(array_unique(array_map(
+                fn (mixed $uri): string => is_string($uri) ? RedirectUri::host($uri) : '?',
+                (array) $client->redirect_uris,
+            )));
+
+            $this->line(sprintf(
+                '    %s → %s, registered %s (oauth client %s)',
+                $client->name ?: '(no name)',
+                implode(', ', $hostsOfClient) ?: '?',
+                $client->created_at?->diffForHumans() ?? 'at an unknown time',
+                $client->getKey(),
+            ));
+        }
+
+        if ($waiting->count() > 20) {
+            $this->line('    … and '.($waiting->count() - 20).' more. php artisan mcp:client-list --pending lists them all.');
+        }
+    }
+
+    /**
+     * OAuth clients with no connector record.
+     *
+     * @return Collection<int, Client>
+     */
+    protected function unregisteredClients(): Collection
     {
         $registered = McpClient::query()
             ->whereNotNull('oauth_client_id')
             ->pluck('oauth_client_id');
 
-        return Client::query()->whereNotIn('id', $registered)->count();
+        return Client::query()
+            ->whereNotIn('id', $registered)
+            ->orderBy('created_at')
+            ->get();
     }
 }
