@@ -32,10 +32,10 @@ class UpdateContent implements Tool
     {
         return <<<'DESC'
 Update an existing entry. Same payload shape as create_content, but PARTIAL: only the sections you include change.
-- "fields": merged per field (send only the fields you change).
+- "fields": merged per field (send only the fields you change). A translated field is merged per locale: every locale you leave out keeps its current text, so send only the locales you change. A locale sent as "" or null is cleared.
 - "medias" / "browsers" / "sync": merged per key (sending a key replaces that key's list; an empty list clears it).
-- "blocks": merged per EDITOR — when you include an editor, send the FULL list of blocks it should end up with (the whole tree for that editor is rebuilt). Always call get_content first and start from its blocks: keep the blocks you want, edit their content, drop the ones you want removed, and add new ones. Block "id" values are optional and ignored on update, so you don't need to track them.
-You can never change the publish state. Updating entries that are already published is refused unless the site enabled it — propose changes to the user instead.
+- "blocks": merged per EDITOR — when you include an editor, send the FULL list of blocks it should end up with (the whole tree for that editor is rebuilt). Always call get_content first and start from its blocks: keep the blocks you want, edit their content, drop the ones you want removed, and add new ones. Keep each existing block's "id" (children too): a block sent with its id keeps the locales you leave out of its translated fields, as "fields" does. A block without an id is new, so send every locale for it. Ids change with every update, so call get_content again before the next one.
+You can never change the publish state, and that includes which languages are active: "locales" is ignored on update and every language stays on or off as it is. Updating entries that are already published is refused unless the site enabled it — propose changes to the user instead.
 Returns the entry id and edit_url.
 DESC;
     }
